@@ -269,6 +269,7 @@ function add_images(group) {
 		.attr("width", image_size)
 		.attr("height", image_size)
 		.attr("href", node => get_image_path(node))
+        .attr("referrerpolicy", "no-referrer") // Bypass hotlink checks
 		.attr("clip-path", node => "url(#" + get_clip_path_id(node) + ")")
 		.attr("cursor", "pointer");
 }

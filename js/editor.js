@@ -82,5 +82,5 @@ Familienbaum.prototype.create_info_form = function() {
     // For the 'i' button, we can just open the sidebar with generic info or an alert
     // or open the sheet directly.
     // Let's open the sheet directly for simplicity as per user preference for robustness.
-    window.open("https://docs.google.com/spreadsheets/d/109453623070216066764/edit", "_blank");
+    window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
 }

@@ -15,16 +15,17 @@ function parseGen(val) {
 function convertDriveLink(url) {
     if (!url) return "";
     // Check for basic Drive file link
-    let driveRegex = /drive\.google\.com\/file\/d\/([-_Wc]+)/;
+    let driveRegex = /drive\.google\.com\/file\/d\/([-_\w]+)/;
     let match = url.match(driveRegex);
     if (match && match[1]) {
-        return "https://drive.google.com/uc?export=view&id=" + match[1];
+        // Use direct Google Content link to avoid 302 redirects
+        return "https://lh3.googleusercontent.com/d/" + match[1] + "=w1000";
     }
     // Check for "open?id=" style
-    driveRegex = /drive\.google\.com\/open\?id=([-_Wc]+)/;
+    driveRegex = /drive\.google\.com\/open\?id=([-_\w]+)/;
     match = url.match(driveRegex);
     if (match && match[1]) {
-        return "https://drive.google.com/uc?export=view&id=" + match[1];
+        return "https://lh3.googleusercontent.com/d/" + match[1] + "=w1000";
     }
     return url;
 }

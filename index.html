@@ -70,7 +70,7 @@
         }
         
         function openSheet() {
-            window.open("https://docs.google.com/spreadsheets/d/109453623070216066764/edit", "_blank");
+            window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
         }
 
         // Initialize D3 in specific container
@@ -78,7 +78,7 @@
 			attr("width", document.body.offsetWidth).
 			attr("height", document.documentElement.clientHeight);
             
-        // Handle Window Resize
+        // Restore Resize Listener
         window.addEventListener("resize", () => {
             svg.attr("width", document.body.offsetWidth)
                .attr("height", document.documentElement.clientHeight);
