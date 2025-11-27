@@ -53,7 +53,7 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
     }
     detailsEl.innerHTML = detailsHtml;
     
-    // Bind Actions to Buttons (Remove old listeners first by cloning? No, onclick override is safer here)
+    // Bind Actions to Buttons
     btnParents.onclick = () => {
         let parents = Array.from(this.dag_all.parents(node_of_dag_all));
 		while (parents.length > 0) {
@@ -73,6 +73,23 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
 		}
 		this.draw(false);
     };
+
+    // Update "Open Google Sheet" button to link to specific row
+    const btnSheet = document.getElementById('btn-open-sheet');
+    if (btnSheet) {
+        if (node_of_dag.data.startsWith("mem_")) {
+            const idx = parseInt(node_of_dag.data.split("_")[1]);
+            const row = idx + 2;
+            const sheetEditUrl = `https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit#gid=790197592&range=A${row}`;
+            
+            btnSheet.onclick = () => window.open(sheetEditUrl, "_blank");
+            btnSheet.innerText = `✏️ Bu Satırı Düzenle (Satır ${row})`;
+        } else {
+            // Default behavior for non-row nodes
+            btnSheet.onclick = () => window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
+            btnSheet.innerText = "Google Tablosunu Aç";
+        }
+    }
 
     // 4. Show Sidebar
     sidebar.classList.add('active');

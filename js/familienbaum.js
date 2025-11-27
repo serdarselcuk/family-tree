@@ -137,14 +137,9 @@ class Familienbaum
 		// Add a group that will contain the circle and the text
 		let circle_group =
 			node_enter_group.append("g").attr("cursor", "pointer").on("click", (event, node) => {
-                if (event.defaultPrevented) return; // Avoid double handling
-                // event.stopPropagation(); // Maybe?
+                if (event.defaultPrevented) return; 
                 
-                if (typeof this.create_editing_form === "function") {
-                    let node_of_dag = node;
-                    let node_of_dag_all = this.dag_all.find_node(node.data);
-                    this.create_editing_form(node_of_dag, node_of_dag_all);
-                }
+                // Only expand/collapse on circle click
 				this.click(node.data);
 				this.draw(true, node.data);
 			});
@@ -154,7 +149,7 @@ class Familienbaum
 			.attr("r", node => get_node_size() / (is_member(node) ? 1.0 : 4.0));
 		// Add the images
 		add_images(circle_group);
-		// Add editing functionality (Plus Sign)
+		// Add editing functionality (Pen Sign)
         node_enter_group.append("g")
             .attr("cursor", "pointer")
             .on("click",
@@ -172,7 +167,7 @@ class Familienbaum
             .attr("text-anchor", "middle")
             .attr("y", node => -get_node_size() / (is_member(node) ? 1.1 : 3.0))
             .attr("x", node => get_node_size() / (is_member(node) ? 1.1 : 3.0))
-            .text("+");
+            .text("✎");
 
 		// The nodes to be updated
 		let node_update = node_enter_group.merge(nodes_selected);
