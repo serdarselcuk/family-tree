@@ -1,10 +1,9 @@
 class Familienbaum
 {
-	constructor(input, svg, div = undefined) {
+	constructor(input, svg) {
 		// Remember the inputs
 		this.data = input;
 		this.svg = svg;
-		this.editing_div = div;
 		// Prepare things related to d3 and SVG
 		this.g = this.svg.append("g");
 		this.zoom = d3.zoom().on("zoom", event => this.g.attr("transform", event.transform));
@@ -122,15 +121,10 @@ class Familienbaum
 					_ => "translate(" + current_node.added_data.y0 + "," + current_node.added_data.x0 + ")")
 				.attr("visible", true);
 		// Add the nodes' labels
-		if (this.editing_div) {
-			node_enter_group.each(function(node) {
-				set_multiline(d3.select(this), node)
-			});
-		} else {
-			node_enter_group.each(function(node) {
-				set_multiline(d3.select(this), node, false)
-			});
-		}
+        node_enter_group.each(function(node) {
+            set_multiline(d3.select(this), node, true)
+        });
+
 		// Get the CSS style of given node
 		function get_css_class(node) {
 			if (!is_member(node)) return "family";
@@ -143,7 +137,14 @@ class Familienbaum
 		// Add a group that will contain the circle and the text
 		let circle_group =
 			node_enter_group.append("g").attr("cursor", "pointer").on("click", (event, node) => {
-				if (this.editing_div) this.editing_div.selectAll("form").remove();
+                if (event.defaultPrevented) return; // Avoid double handling
+                // event.stopPropagation(); // Maybe?
+                
+                if (typeof this.create_editing_form === "function") {
+                    let node_of_dag = node;
+                    let node_of_dag_all = this.dag_all.find_node(node.data);
+                    this.create_editing_form(node_of_dag, node_of_dag_all);
+                }
 				this.click(node.data);
 				this.draw(true, node.data);
 			});
@@ -153,28 +154,26 @@ class Familienbaum
 			.attr("r", node => get_node_size() / (is_member(node) ? 1.0 : 4.0));
 		// Add the images
 		add_images(circle_group);
-		// Add editing functionality
-		if (this.editing_div) {
-			node_enter_group.append("g")
-				.attr("cursor", "pointer")
-				.on("click",
-					(event, node) => {
-						this.editing_div.selectAll("form").remove();
-						if (typeof this.create_editing_form === "function") {
-							let node_of_dag = node;
-							let node_of_dag_all = this.dag_all.find_node(node.data);
-							this.create_editing_form(node_of_dag, node_of_dag_all);
-						}
-					})
-				.append("text")
-				.attr("cursor", "pointer")
-				.attr("class", "plus-label")
-				.append("tspan")
-				.attr("text-anchor", "middle")
-				.attr("y", node => -get_node_size() / (is_member(node) ? 1.1 : 3.0))
-				.attr("x", node => get_node_size() / (is_member(node) ? 1.1 : 3.0))
-				.text("+");
-		}
+		// Add editing functionality (Plus Sign)
+        node_enter_group.append("g")
+            .attr("cursor", "pointer")
+            .on("click",
+                (event, node) => {
+                    if (typeof this.create_editing_form === "function") {
+                        let node_of_dag = node;
+                        let node_of_dag_all = this.dag_all.find_node(node.data);
+                        this.create_editing_form(node_of_dag, node_of_dag_all);
+                    }
+                })
+            .append("text")
+            .attr("cursor", "pointer")
+            .attr("class", "plus-label")
+            .append("tspan")
+            .attr("text-anchor", "middle")
+            .attr("y", node => -get_node_size() / (is_member(node) ? 1.1 : 3.0))
+            .attr("x", node => get_node_size() / (is_member(node) ? 1.1 : 3.0))
+            .text("+");
+
 		// The nodes to be updated
 		let node_update = node_enter_group.merge(nodes_selected);
 		// Define the transition
@@ -269,7 +268,7 @@ function add_images(group) {
 		.attr("y", -image_size / 2.0)
 		.attr("width", image_size)
 		.attr("height", image_size)
-		.attr("xlink:href", node => get_image_path(node))
+		.attr("href", node => get_image_path(node))
 		.attr("clip-path", node => "url(#" + get_clip_path_id(node) + ")")
 		.attr("cursor", "pointer");
 }

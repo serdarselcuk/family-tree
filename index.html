@@ -1,15 +1,53 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <meta charset="utf-8" />
-<meta name="robots" content="noindex" />
-<meta name="AdsBot-Google" content="noindex" />
 <title>Çamakoğlu Sülalesi</title>
 <link rel="stylesheet" href="css/familienbaum.css">
 </head>
-
 <body>
+    <!-- Tree Container (SVG goes here) -->
+    <div id="tree-container" style="width:100%; height:100vh;"></div>
+
+    <!-- STATIC SIDEBAR STRUCTURE -->
+    <aside id="family-sidebar">
+        <div class="sidebar-header">
+            <h2 id="sidebar-title">Kişi Adı</h2>
+            <button class="close-btn" onclick="closeSidebar()">✕</button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Action Buttons -->
+            <div class="sidebar-section">
+                <button id="btn-parents" class="action-btn btn-primary">Ataları Göster (Anne/Baba)</button>
+                <button id="btn-children" class="action-btn btn-primary">Torunları Göster (Çocuklar)</button>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="sidebar-section">
+                <label style="display:block; margin-bottom:5px; color:#333;"><b>Fotoğraf Güncelle:</b></label>
+                <button onclick="openDriveFolder()" class="action-btn btn-success">📂 Drive'a Yükle</button>
+                <div style="font-size:0.8em; color:#666; line-height:1.4;">
+                    1. Fotoğrafı Drive'a yükle.<br>
+                    2. Sağ tık > Paylaş > Bağlantıyı Kopyala.<br>
+                    3. Bağlantıyı Google Sheet'e yapıştır.
+                </div>
+            </div>
+
+            <!-- Dynamic Details -->
+            <div class="sidebar-section">
+                <h4 style="margin-top:0; color:#333;">Detaylar</h4>
+                <div id="sidebar-details"></div>
+            </div>
+            
+            <!-- Meta -->
+            <div class="sidebar-section">
+                <button class="action-btn btn-secondary" onclick="openSheet()">Google Tablosunu Aç</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- SCRIPTS -->
 	<script src="js/d3.v7.min.js"></script>
 	<script src="js/dag.js"></script>
 	<script src="js/dag_layout.js"></script>
@@ -17,66 +55,63 @@
 	<script src="js/dag_with_family_data.js"></script>
 	<script src="js/dag_relaxation.js"></script>
 	<script src="js/familienbaum.js"></script>
+    <script src="js/editor.js"></script>
     <script src="js/sheet_loader.js"></script>
-	<script>
-		// Add an SVG tag
-		const svg = d3.select("body").append("svg").
+    
+    <!-- Minimal Logic for Sidebar Interaction -->
+    <script>
+        // Global UI Functions
+        function closeSidebar() {
+            document.getElementById('family-sidebar').classList.remove('active');
+        }
+        
+        function openDriveFolder() {
+            window.open("https://drive.google.com/drive/folders/1DzFjTHjzsnM1dcJMF4jZU5RDliCzX0xH?usp=drive_link", "_blank");
+        }
+        
+        function openSheet() {
+            window.open("https://docs.google.com/spreadsheets/d/109453623070216066764/edit", "_blank");
+        }
+
+        // Initialize D3 in specific container
+		const svg = d3.select("#tree-container").append("svg").
 			attr("width", document.body.offsetWidth).
 			attr("height", document.documentElement.clientHeight);
-		
-        // App Logic
+            
         const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTzo66Bb8-z3QdqtNGZ9uhQJZJxePifl6nJwvtlot-3JtKp4YKYQdqJNFDY89lqHoMRdlKZmjWzh2OA/pub?output=csv";
 
         async function initApp() {
             let inputData = null;
-            
-            // 1. Try Network
             try {
-                console.log("Attempting to load data from:", SHEET_URL);
                 inputData = await loadFromGoogleSheet(SHEET_URL);
-                // Save to cache on success
                 localStorage.setItem('soyagaci_cached_data', JSON.stringify(inputData));
             } catch (e) {
-                console.warn("Network load failed:", e);
-            }
-
-            // 2. Try Cache if network failed
-            if (!inputData) {
+                console.warn("Network failed, trying cache...", e);
                 const cached = localStorage.getItem('soyagaci_cached_data');
-                if (cached) {
-                    try {
-                        console.log("Loading data from local cache...");
-                        inputData = JSON.parse(cached);
-                    } catch (e) {
-                        console.warn("Cache parse failed:", e);
-                    }
-                }
-            }
-
-            // 3. Fallback to static local file
-            if (!inputData && typeof _input !== 'undefined') {
-                console.log("Falling back to local js/input.js data.");
-                inputData = _input;
+                if (cached) inputData = JSON.parse(cached);
             }
 
             if (!inputData) {
-                alert("Failed to load family tree data. Please check your internet connection.");
+                alert("Could not load data.");
                 return;
             }
 
-            // 4. Restore View State (Last visited person)
+            // Restore state
             const lastNodeId = localStorage.getItem('soyagaci_last_node');
             if (lastNodeId && inputData.members[lastNodeId]) {
-                console.log("Restoring last position:", lastNodeId);
                 inputData.start = lastNodeId;
             }
 
+            // We no longer pass 'detailsDiv' to constructor because we manage it globally now
             let familienbaum = new Familienbaum(inputData, svg);
             familienbaum.draw();
         }
 
-        initApp();
-	</script>
-</body>
+        // Shift Key Listeners
+        document.addEventListener('keydown', (e) => { if (e.key === 'Shift') document.body.classList.add('show-plus'); });
+        document.addEventListener('keyup', (e) => { if (e.key === 'Shift') document.body.classList.remove('show-plus'); });
 
+        initApp();
+    </script>
+</body>
 </html>

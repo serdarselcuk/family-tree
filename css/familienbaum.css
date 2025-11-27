@@ -3,93 +3,108 @@ body {
 	height: 100%;
 	overflow: hidden;
 	background: #953240;
+    margin: 0;
 }
 
-input {
-	font: 12pt sans-serif;
-	background: #953240;
-	color: white;
-}
+/* ... (Keep existing graph styles) ... */
+.member { fill: #3e79C9; stroke-width: 2px; z-index: 8; }
+.family { fill: #953240; stroke: #3e79C9; stroke-width: 2px; z-index: 7; }
+.highlighted { fill: #3e79C9; stroke: white; stroke-width: 3px; }
+.non-highlighted { fill: #3e79C9; stroke: #3e79C9; stroke-width: 3px; }
+.node-label { font: 12px sans-serif; fill: white; pointer-events: none; }
+.link { fill: none; stroke: #3e79C9; stroke-width: 2px; z-index: 6; }
+image { filter: saturate(75%) }
 
-label {
-	font: 12pt sans-serif;
-	background: #953240;
-	color: white;
-}
-
-button {
-	padding: 8px 8px;
-	font: 12pt sans-serif;
-	background: #303030;
-	color: white;
-}
-
-image {
-	filter: saturate(75%)
-}
-
-a {
-	text-decoration: none;
-	color: lightblue;
-}
-
-.member {
-	fill: #3e79C9;
-	stroke-width: 2px;
-	z-index: 8;
-}
-
-.family {
-	fill: #953240;
-	stroke: #3e79C9;
-	stroke-width: 2px;
-	z-index: 7;
-}
-
-.highlighted {
-	fill: #3e79C9;
-	stroke: white;
-	stroke-width: 3px;
-}
-
-.non-highlighted {
-	fill: #3e79C9;
-	stroke: #3e79C9;
-	stroke-width: 3px;
-}
-
-.node-label {
-	font: 12px sans-serif;
-	fill: white;
-	fill-opacity: 1;
-	z-index: 9;
-}
-
+/* Shift Key Logic */
 .plus-label {
 	font: 24px sans-serif;
 	fill: white;
 	fill-opacity: 0.75;
 	z-index: 6;
+    visibility: hidden;
+    pointer-events: none;
+}
+body.show-plus .plus-label { visibility: visible; pointer-events: auto; }
+
+/* --- NEW SIDEBAR STYLES --- */
+#family-sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px; /* Hidden by default (off-screen) */
+    width: 320px;
+    height: 100vh;
+    background: #ffffff;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+    z-index: 9999;
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    font-family: sans-serif;
 }
 
-.link {
-	fill: none;
-	stroke: #3e79C9;
-	stroke-width: 2px;
-	z-index: 6;
+#family-sidebar.active {
+    right: 0; /* Slide in */
 }
 
-.editing_div {
-	position: absolute;
-	top: 8px;
-	left: 8px;
-	z-index: 10;
+.sidebar-header {
+    padding: 15px;
+    background: #f4f4f4;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.info-text {
-	font: 24pt sans-serif;
-	fill: white;
-	fill-opacity: 1;
-	text-anchor: end;
-	z-index: 9;
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #953240;
 }
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.sidebar-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-section {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.action-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.btn-primary { background: #3e79C9; color: white; }
+.btn-primary:hover { background: #2a5a96; }
+
+.btn-success { background: #4CAF50; color: white; }
+.btn-success:hover { background: #3d8b40; }
+
+.btn-secondary { background: #eee; color: #333; }
+.btn-secondary:hover { background: #ddd; }
+
+.info-row {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+.info-label { font-weight: bold; color: #555; }
