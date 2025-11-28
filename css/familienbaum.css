@@ -88,12 +88,32 @@ body {
     stroke-dasharray: 4 2;
     /* Dashed border for distinct look */
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
+    opacity: 0.75 !important;
+    /* Make deceased nodes generally less prominent */
+}
+
+/* Collapsed (Highlighted) Deceased Member */
+.member.deceased.highlighted {
+    stroke: var(--accent) !important;
+    /* Amber stroke to signal interactivity */
+    stroke-width: 3px !important;
+    stroke-dasharray: none !important;
+    /* Solid border for active state */
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)) !important;
+    /* Amber glow - slightly less prominent */
+    fill: #475569 !important;
+    /* Keep darker grey fill */
 }
 
 .member.deceased:hover {
     fill: #475569 !important;
     /* Slate 600 */
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) !important;
+}
+
+.member.deceased.highlighted:hover {
+    stroke: var(--accent-dark) !important;
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6)) !important;
 }
 
 /* Grayscale image for deceased members */
