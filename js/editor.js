@@ -74,6 +74,16 @@ async function saveData(node, updates) {
             document.getElementById('sidebar-title').innerText = node.added_data.input['name'];
         }
         
+        // Update tree node image if photo was deleted
+        if (updates[COLUMN_MAPPING['image_path']] === "") {
+            if (typeof d3 !== 'undefined') {
+                d3.selectAll("g.node")
+                    .filter(d => d.data === node.data)
+                    .select("image")
+                    .attr("href", "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png");
+            }
+        }
+
         // Refresh UI elements (Name in tree, etc.)
         if (typeof d3 !== 'undefined') {
              d3.selectAll("g.node")
@@ -203,8 +213,13 @@ function showAddChildForm(node) {
     const uploadStatus = document.getElementById('upload-status');
     uploadStatus.innerText = "";
 
+    // Hide delete photo button (no photo yet for new child)
+    const deletePhotoBtn = document.getElementById('delete-photo-btn');
+    deletePhotoBtn.style.display = "none";
+
     // Set a flag that we're in "add child" mode
     imageEl.dataset.addChildMode = "true";
+    imageEl.dataset.deletePhoto = "false";
 
     // Click image to select photo (use normal flow with cropper)
     imageEl.onclick = () => {
@@ -427,6 +442,49 @@ async function addChild(node) {
     showAddChildForm(node);
 }
 
+async function deleteChild(node) {
+    const name = get_name(node) || "Bu kişi";
+    const confirmDelete = confirm(`${name} isimli kişiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!`);
+
+    if (!confirmDelete) return;
+
+    try {
+        const memberId = parseInt(node.data.split("_")[1]);
+        const sheetRow = memberId + 2; // +2 for 1-based indexing and header row
+
+        const statusEl = document.getElementById('save-status');
+        statusEl.innerText = "Siliniyor...";
+        statusEl.style.color = "orange";
+
+        const payload = {
+            action: "deleteRow",
+            row: sheetRow
+        };
+
+        await fetch(UPLOAD_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+
+        statusEl.innerText = "Silindi! Sayfayı yenileyin.";
+        statusEl.style.color = "green";
+        alert("Kişi silindi. Lütfen sayfayı yenileyin.");
+
+        // Close sidebar after a delay
+        setTimeout(() => {
+            document.getElementById('family-sidebar').classList.remove('active');
+        }, 1000);
+
+    } catch (e) {
+        console.error(e);
+        const statusEl = document.getElementById('save-status');
+        statusEl.innerText = "Hata: " + e.message;
+        statusEl.style.color = "red";
+    }
+}
+
 
 // Function to handle the actual upload
 async function uploadPhoto(file, node) {
@@ -532,6 +590,27 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
 
     // Clear add child mode flag (we're in edit mode now)
     imageEl.dataset.addChildMode = "false";
+    imageEl.dataset.deletePhoto = "false";
+
+    // Show delete photo button if there's an actual photo (not placeholder)
+    const deletePhotoBtn = document.getElementById('delete-photo-btn');
+    if (imagePath && imagePath !== "") {
+        deletePhotoBtn.style.display = "block";
+        deletePhotoBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent triggering image upload
+            // Mark photo for deletion
+            imageEl.dataset.deletePhoto = "true";
+            // Show placeholder
+            imageEl.src = placeholder;
+            // Hide delete button
+            deletePhotoBtn.style.display = "none";
+            // Show status
+            document.getElementById('save-status').innerText = "Fotoğraf silinecek (kaydet butonuna basın)";
+            document.getElementById('save-status').style.color = "orange";
+        };
+    } else {
+        deletePhotoBtn.style.display = "none";
+    }
 
     // Click image to upload
     imageEl.onclick = () => {
@@ -580,6 +659,9 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
              `;
         });
         
+        // Check if this is a leaf node (no children)
+        const isLeafNode = Array.from(node_of_dag_all.children()).length === 0;
+
         // Add Save and Dynamic Add Button
         let actionButton = "";
         if (isSpouse) {
@@ -588,9 +670,18 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
             actionButton = `<button id="btn-add-spouse" class="action-btn btn-secondary" style="font-size:0.8em;">💍 Eş Ekle</button>`;
         }
 
+        // Add delete button for leaf nodes
+        let deleteButton = "";
+        if (isLeafNode) {
+            deleteButton = `<button id="btn-delete-child" class="action-btn btn-danger" style="font-size:0.8em; background-color:#dc3545;">🗑️ Sil</button>`;
+        }
+
         detailsHtml += `
             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                ${actionButton}
+                <div style="display:flex; gap:5px;">
+                    ${actionButton}
+                    ${deleteButton}
+                </div>
                 <div style="text-align:right;">
                     <span id="save-status" style="font-size:0.85em; margin-right:10px;"></span>
                     <button id="btn-save-changes" class="action-btn btn-success">💾 Kaydet</button>
@@ -607,11 +698,12 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
     const btnSave = document.getElementById('btn-save-changes');
     const btnAddChild = document.getElementById('btn-add-child');
     const btnAddSpouse = document.getElementById('btn-add-spouse');
+    const btnDeleteChild = document.getElementById('btn-delete-child');
 
     if (btnSave) {
         btnSave.onclick = () => {
             const updates = {};
-            
+
             const inputs = detailsEl.querySelectorAll('input.sidebar-input');
             inputs.forEach(inp => {
                 const key = inp.getAttribute('data-key'); // e.g., "first_name"
@@ -623,9 +715,18 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
                     if (colIndex) updates[colIndex] = val;
                 }
             });
-            
+
+            // Check if photo is marked for deletion
+            if (imageEl.dataset.deletePhoto === "true") {
+                updates[COLUMN_MAPPING['image_path']] = ""; // Clear the image path
+            }
+
             if (Object.keys(updates).length > 0) {
                 saveData(node_of_dag, updates);
+                // Clear deletion flag after save
+                imageEl.dataset.deletePhoto = "false";
+                const deletePhotoBtn = document.getElementById('delete-photo-btn');
+                if (deletePhotoBtn) deletePhotoBtn.style.display = "none";
             } else {
                 document.getElementById('save-status').innerText = "Değişiklik yok.";
             }
@@ -637,10 +738,16 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
             addChild(node_of_dag);
         };
     }
-    
+
     if (btnAddSpouse) {
         btnAddSpouse.onclick = () => {
             addSpouse(node_of_dag);
+        };
+    }
+
+    if (btnDeleteChild) {
+        btnDeleteChild.onclick = () => {
+            deleteChild(node_of_dag);
         };
     }
     

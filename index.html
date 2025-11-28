@@ -61,7 +61,10 @@
         <div class="sidebar-content">
             <!-- Profile Image -->
             <div class="sidebar-section" style="text-align: center; margin-bottom: 15px;">
-                <img id="sidebar-image" src="" alt="Fotoğraf" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none;">
+                <div style="position: relative; display: inline-block;">
+                    <img id="sidebar-image" src="" alt="Fotoğraf" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none;">
+                    <button id="delete-photo-btn" style="display: none; position: absolute; top: 5px; right: 5px; background: rgba(220, 53, 69, 0.9); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; font-weight: bold; line-height: 1; padding: 0;">×</button>
+                </div>
                 <div id="upload-status" style="font-size: 0.8em; color: grey; margin-top:5px; min-height:1.2em;"></div>
                 <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
             </div>
