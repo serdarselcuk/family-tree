@@ -1,5 +1,4 @@
-class Familienbaum
-{
+class Familienbaum {
 	constructor(input, svg) {
 		// Remember the inputs
 		this.data = input;
@@ -77,10 +76,10 @@ class Familienbaum
 		// Find current node in the filtered DAG
 		let current_node = this.dag.find_node(this.data["start"] = current_node_id);
 
-        // Save state to localStorage
-        try {
-            localStorage.setItem('soyagaci_last_node', current_node_id);
-        } catch (e) { /* ignore */ }
+		// Save state to localStorage
+		try {
+			localStorage.setItem('soyagaci_last_node', current_node_id);
+		} catch (e) { /* ignore */ }
 
 		// Draw nodes and links
 		this.draw_nodes(this.dag.nodes(), current_node);
@@ -111,7 +110,7 @@ class Familienbaum
 			if (compare[0] > compare[1]) return true;
 			if (compare[0] < compare[1]) return false;
 			return node_1.data > node_2.data;
-	 	});
+		});
 		// The data is connected by providing a key function
 		let nodes_selected = this.g.selectAll("g.node").data(nodes_to_draw, node => node.data);
 		// Entering nodes will appear at current_node position
@@ -123,49 +122,59 @@ class Familienbaum
 					_ => "translate(" + current_node.added_data.y0 + "," + current_node.added_data.x0 + ")")
 				.attr("visible", true);
 		// Add the nodes' labels
-        node_enter_group.each(function(node) {
-            set_multiline(d3.select(this), node, true)
-        });
+		node_enter_group.each(function (node) {
+			set_multiline(d3.select(this), node, true)
+		});
 
 		// Get the CSS style of given node
 		function get_css_class(node) {
 			if (!is_member(node)) return "family";
+
+			let cssClass = "member";
+
 			if (!node.added_data.is_highlighted) {
-				return "member non-highlighted";
+				cssClass += " non-highlighted";
 			} else {
-				return "member highlighted";
+				cssClass += " highlighted";
 			}
+
+			// Check for death date to add deceased class
+			if (get_death_date(node)) {
+				cssClass += " deceased";
+			}
+
+			return cssClass;
 		}
 		// Add a group that will contain the circle and the text
 		let circle_group =
 			node_enter_group.append("g").attr("cursor", "pointer").on("click", (event, node) => {
-                if (event.defaultPrevented) return;
+				if (event.defaultPrevented) return;
 
-                // Check if sidebar is open
-                const sidebar = document.getElementById('family-sidebar');
-                const sidebarIsOpen = sidebar && sidebar.classList.contains('active');
+				// Check if sidebar is open
+				const sidebar = document.getElementById('family-sidebar');
+				const sidebarIsOpen = sidebar && sidebar.classList.contains('active');
 
-                // If sidebar is open (with or without shift key), switch to that person
-                if (sidebarIsOpen) {
-                    if (typeof this.create_editing_form === "function") {
-                        let node_of_dag = node;
-                        let node_of_dag_all = this.dag_all.find_node(node.data);
-                        this.create_editing_form(node_of_dag, node_of_dag_all);
-                    }
-                    return;
-                }
+				// If sidebar is open (with or without shift key), switch to that person
+				if (sidebarIsOpen) {
+					if (typeof this.create_editing_form === "function") {
+						let node_of_dag = node;
+						let node_of_dag_all = this.dag_all.find_node(node.data);
+						this.create_editing_form(node_of_dag, node_of_dag_all);
+					}
+					return;
+				}
 
-                // Check for Shift key when sidebar is closed
-                if (event.shiftKey) {
-                    if (typeof this.create_editing_form === "function") {
-                        let node_of_dag = node;
-                        let node_of_dag_all = this.dag_all.find_node(node.data);
-                        this.create_editing_form(node_of_dag, node_of_dag_all);
-                    }
-                    return;
-                }
+				// Check for Shift key when sidebar is closed
+				if (event.shiftKey) {
+					if (typeof this.create_editing_form === "function") {
+						let node_of_dag = node;
+						let node_of_dag_all = this.dag_all.find_node(node.data);
+						this.create_editing_form(node_of_dag, node_of_dag_all);
+					}
+					return;
+				}
 
-                // Only expand/collapse on circle click when sidebar is closed and no shift key
+				// Only expand/collapse on circle click when sidebar is closed and no shift key
 				this.click(node.data);
 				this.draw(true, node.data);
 			});
@@ -176,25 +185,25 @@ class Familienbaum
 		// Add the images
 		add_images(circle_group);
 		// Add editing functionality (Pen Sign)
-        node_enter_group.append("g")
-            .attr("cursor", "pointer")
-            .on("click",
-                (event, node) => {
-                    if (typeof this.create_editing_form === "function") {
-                        let node_of_dag = node;
-                        let node_of_dag_all = this.dag_all.find_node(node.data);
-                        this.create_editing_form(node_of_dag, node_of_dag_all);
-                    }
-                })
-            .append("text")
-            .attr("cursor", "pointer")
-            .attr("class", "plus-label")
-            .attr("font-size", "50%") // Make it smaller
-            .append("tspan")
-            .attr("text-anchor", "middle")
-            .attr("y", node => -get_node_size() / (is_member(node) ? 1.1 : 3.0))
-            .attr("x", node => get_node_size() / (is_member(node) ? 1.1 : 3.0))
-            .text("✎");
+		node_enter_group.append("g")
+			.attr("cursor", "pointer")
+			.on("click",
+				(event, node) => {
+					if (typeof this.create_editing_form === "function") {
+						let node_of_dag = node;
+						let node_of_dag_all = this.dag_all.find_node(node.data);
+						this.create_editing_form(node_of_dag, node_of_dag_all);
+					}
+				})
+			.append("text")
+			.attr("cursor", "pointer")
+			.attr("class", "plus-label")
+			.attr("font-size", "50%") // Make it smaller
+			.append("tspan")
+			.attr("text-anchor", "middle")
+			.attr("y", node => -get_node_size() / (is_member(node) ? 1.1 : 3.0))
+			.attr("x", node => get_node_size() / (is_member(node) ? 1.1 : 3.0))
+			.text("✎");
 
 		// The nodes to be updated
 		let node_update = node_enter_group.merge(nodes_selected);
@@ -227,7 +236,7 @@ class Familienbaum
 		let link =
 			this.g.selectAll("path.link").data(links, link => link.source.data + "_" + link.target.data);
 		// Entering links will appear at current_node position
-		let link_enter = link.enter().insert("path", "g").attr("class", "link").attr("d", function() {
+		let link_enter = link.enter().insert("path", "g").attr("class", "link").attr("d", function () {
 			let o = { x: current_node.added_data.x0, y: current_node.added_data.y0 };
 			return get_curved_edge(o, o);
 		});
@@ -257,15 +266,15 @@ class Familienbaum
 
 	add_info_text(svg) {
 		return svg.append("text")
-		.on("click", _ => {
-			this.editing_div.selectAll("form").remove();
-			this.create_info_form();
-		})
-		.attr("cursor", "pointer")
-		.attr("class", "info-text")
-		.attr("x", svg.attr("width")-16)
-		.attr("y", "24pt")
-		.text("ⓘ");
+			.on("click", _ => {
+				this.editing_div.selectAll("form").remove();
+				this.create_info_form();
+			})
+			.attr("cursor", "pointer")
+			.attr("class", "info-text")
+			.attr("x", svg.attr("width") - 16)
+			.attr("y", "24pt")
+			.text("ⓘ");
 	}
 };
 
@@ -291,7 +300,7 @@ function add_images(group) {
 		.attr("width", image_size)
 		.attr("height", image_size)
 		.attr("href", node => get_image_path(node))
-        .attr("referrerpolicy", "no-referrer") // Bypass hotlink checks
+		.attr("referrerpolicy", "no-referrer") // Bypass hotlink checks
 		.attr("clip-path", node => "url(#" + get_clip_path_id(node) + ")")
 		.attr("cursor", "pointer");
 }
@@ -341,6 +350,12 @@ function set_multiline(d3_element, node, edit_mode = true) {
 		for (let i = 1; i < names.length; i++) {
 			all_names += " " + names[i];
 		}
+
+		// Append deceased symbol if death date exists
+		if (get_death_date(node)) {
+			all_names += " ☽";
+		}
+
 		return all_names;
 	}
 

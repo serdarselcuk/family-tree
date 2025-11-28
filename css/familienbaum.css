@@ -78,6 +78,31 @@ body {
     opacity: 0.4;
 }
 
+/* Deceased Member Style */
+.member.deceased {
+    fill: #64748b !important;
+    /* Slate 500 - Darker Grey */
+    stroke: #334155 !important;
+    /* Slate 700 */
+    stroke-width: 2.5px !important;
+    stroke-dasharray: 4 2;
+    /* Dashed border for distinct look */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
+}
+
+.member.deceased:hover {
+    fill: #475569 !important;
+    /* Slate 600 */
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) !important;
+}
+
+/* Grayscale image for deceased members */
+/* The image is a sibling of the circle in the SVG structure */
+.member.deceased~image {
+    filter: grayscale(100%) contrast(1.1) brightness(0.9) !important;
+    opacity: 0.9;
+}
+
 .node-label {
     font-family: 'Outfit', sans-serif;
     font-size: 14px;
