@@ -4,6 +4,7 @@
 const UPLOAD_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz98JrPFb1xW84pirJKMHlsvDJ5c2msxsVDTYvwKpm498twobAOhVuEfNrvWtzUI3LV/exec";
 
 let currentEditedNode = null;
+let pendingChildPhoto = null; // Store photo file when adding a new child
 
 // --- HARDCODED COLUMN MAPPING (1-based indices for Google Sheet) ---
 const COLUMN_MAPPING = {
@@ -187,10 +188,29 @@ function showAddChildForm(node) {
     const titleEl = document.getElementById('sidebar-title');
     const detailsEl = document.getElementById('sidebar-details');
     const imageEl = document.getElementById('sidebar-image');
-    
-    // Hide Image for Add Mode
-    imageEl.style.display = "none";
-    
+
+    // Show placeholder image for new child
+    const placeholder = "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
+    imageEl.src = placeholder;
+    imageEl.style.display = "inline-block";
+    imageEl.style.cursor = "pointer";
+    imageEl.title = "Fotoğraf eklemek için tıklayın";
+
+    // Reset pending photo
+    pendingChildPhoto = null;
+
+    // Clear upload status from previous operations
+    const uploadStatus = document.getElementById('upload-status');
+    uploadStatus.innerText = "";
+
+    // Set a flag that we're in "add child" mode
+    imageEl.dataset.addChildMode = "true";
+
+    // Click image to select photo (use normal flow with cropper)
+    imageEl.onclick = () => {
+        document.getElementById('image-upload-input').click();
+    };
+
     // Set Title
     titleEl.innerText = "Yeni Çocuk Ekle";
     
@@ -346,12 +366,55 @@ async function submitNewChild(node) {
             body: JSON.stringify(payload)
         });
 
-        statusEl.innerText = "Başarılı! Sayfayı yenileyin.";
+        statusEl.innerText = "Çocuk eklendi!";
         statusEl.style.color = "green";
-        alert("Çocuk eklendi. Lütfen sayfayı yenileyin.");
-        
-        // Close sidebar
-        document.getElementById('family-sidebar').classList.remove('active');
+
+        // If a photo was selected, upload it now
+        if (pendingChildPhoto) {
+            statusEl.innerText = "Çocuk eklendi! Fotoğraf yükleniyor...";
+            statusEl.style.color = "orange";
+
+            try {
+                // Create a temporary node object for the new child
+                // The new child row is at insertAfterRow + 1 (because insertRowsAfter inserts AFTER the specified row)
+                // Member ID = row - 2 (to account for 1-based indexing and header row)
+                const newChildRow = insertAfterRow + 1;
+                const newChildMemberId = newChildRow - 2;
+                const tempNode = {
+                    data: "mem_" + newChildMemberId,
+                    added_data: { input: {} }
+                };
+
+                // Upload the photo
+                await uploadPhoto(pendingChildPhoto, tempNode);
+
+                statusEl.innerText = "Başarılı! Fotoğraf yüklendi. Sayfayı yenileyin.";
+                statusEl.style.color = "green";
+                alert("Çocuk ve fotoğraf eklendi. Lütfen sayfayı yenileyin.");
+
+            } catch (photoError) {
+                console.error("Photo upload error:", photoError);
+                statusEl.innerText = "Çocuk eklendi ama fotoğraf yüklenemedi. Sayfayı yenileyip tekrar deneyin.";
+                statusEl.style.color = "orange";
+                alert("Çocuk eklendi ama fotoğraf yüklenemedi. Lütfen sayfayı yenileyip fotoğrafı tekrar ekleyin.");
+            }
+
+            // Clear pending photo and flag
+            pendingChildPhoto = null;
+            document.getElementById('sidebar-image').dataset.addChildMode = "false";
+        } else {
+            statusEl.innerText = "Başarılı! Sayfayı yenileyin.";
+            statusEl.style.color = "green";
+            alert("Çocuk eklendi. Lütfen sayfayı yenileyin.");
+        }
+
+        // Clear the add child mode flag
+        document.getElementById('sidebar-image').dataset.addChildMode = "false";
+
+        // Close sidebar after a delay to let user see the message
+        setTimeout(() => {
+            document.getElementById('family-sidebar').classList.remove('active');
+        }, 1000);
 
     } catch (e) {
         console.error(e);
@@ -460,13 +523,16 @@ Familienbaum.prototype.create_editing_form = function(node_of_dag, node_of_dag_a
 
     // Set Image or Placeholder
     const imagePath = get_image_path(node_of_dag);
-    const placeholder = "https://i.imgur.com/1o1zQ2b.png"; // Generic Avatar
-    
+    const placeholder = "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
+
     imageEl.src = (imagePath && imagePath !== "") ? imagePath : placeholder;
     imageEl.style.display = "inline-block";
     imageEl.style.cursor = "pointer";
     imageEl.title = "Fotoğrafı değiştirmek için tıklayın";
-    
+
+    // Clear add child mode flag (we're in edit mode now)
+    imageEl.dataset.addChildMode = "false";
+
     // Click image to upload
     imageEl.onclick = () => {
         document.getElementById('image-upload-input').click();
@@ -678,7 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnConfirmCrop) {
         btnConfirmCrop.addEventListener('click', () => {
             if (!cropper) return;
-            
+
             // Get cropped canvas
             cropper.getCroppedCanvas({
                 width: 400, // Resize to reasonable size
@@ -687,8 +753,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create a "File" object from the blob to pass to uploadPhoto
                 // We need to preserve the name roughly or give a new one
                 const file = new File([blob], "cropped_image.jpg", { type: "image/jpeg" });
-                
-                if (currentEditedNode) {
+
+                const imageEl = document.getElementById('sidebar-image');
+                const isAddChildMode = imageEl.dataset.addChildMode === "true";
+
+                if (isAddChildMode) {
+                    // Store cropped file for later upload after child is created
+                    pendingChildPhoto = file;
+
+                    // Show preview in sidebar
+                    const tempUrl = URL.createObjectURL(file);
+                    imageEl.src = tempUrl;
+
+                    // Update upload status
+                    const uploadStatus = document.getElementById('upload-status');
+                    uploadStatus.innerText = "Fotoğraf hazır (çocuk eklendikten sonra yüklenecek)";
+                    uploadStatus.style.color = "blue";
+                } else if (currentEditedNode) {
+                    // Normal edit mode: upload immediately
                     uploadPhoto(file, currentEditedNode);
                 }
                 closeCropModal();
