@@ -105,67 +105,7 @@ async function saveData(node, updates) {
 }
 
 async function addSpouse(node) {
-    const statusEl = document.getElementById('save-status');
-    const memberId = parseInt(node.data.split("_")[1]);
-
-    // Insertion Logic for Spouse
-    // Insert AFTER the Head and any EXISTING spouses.
-    // STOP before any children.
-
-    let insertAfterRow = memberId; // Default: After self
-    let checkId = memberId + 1;
-
-    if (window.familyData && window.familyData.members) {
-        while (true) {
-            const nextMem = window.familyData.members["mem_" + checkId];
-            if (!nextMem) break;
-
-            // If next is already a Spouse ("E"), skip it (we add after last spouse)
-            if (nextMem.is_spouse) {
-                insertAfterRow = checkId; // Update target
-                checkId++;
-                continue;
-            }
-
-            // If next is Child or Sibling, STOP.
-            // We want to insert BEFORE the children.
-            break;
-        }
-    }
-
-    // Convert to Sheet Row (1-based + Header)
-    const targetRow = insertAfterRow + 2;
-
-    const spouseName = prompt("Yeni eşin adı nedir?");
-    if (!spouseName) return;
-
-    statusEl.innerText = "Eş ekleniyor...";
-    statusEl.style.color = "orange";
-
-    try {
-        const payload = {
-            action: "addSpouse",
-            row: targetRow,
-            childGen: "E", // Spouse Generation
-            name: spouseName
-        };
-
-        await fetch(UPLOAD_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-
-        statusEl.innerText = "Eş eklendi! Lütfen sayfayı yenileyin.";
-        statusEl.style.color = "green";
-        alert("Eş başarıyla eklendi! Lütfen sayfayı yenileyin.");
-
-    } catch (e) {
-        console.error(e);
-        statusEl.innerText = "Hata: " + e.message;
-        statusEl.style.color = "red";
-    }
+    showAddSpouseForm(node);
 }
 
 // Helper to render form fields (reused for Edit and Add)
@@ -267,21 +207,7 @@ function showAddChildForm(node) {
     btnCancel.innerText = "İptal";
     btnCancel.onclick = () => {
         // Revert to Edit Mode
-        let familienbaum = new Familienbaum(window.familyData, d3.select("svg")); // Hacky access to instance? 
-        // Actually we just need to call create_editing_form on the prototype if we have the context.
-        // Better: Just re-click the node? 
-        // Simplest: reload the sidebar for the current node.
         if (typeof currentEditedNode !== 'undefined') {
-            // We need to call create_editing_form. But it's a method on prototype.
-            // We can assume the global instance is accessible or just re-trigger click logic?
-            // Let's just manually call it if we can access the instance.
-            // If not, we can just hide sidebar.
-            // Let's try to find the D3 node click handler? No.
-
-            // Re-rendering the edit form logic manually:
-            // We need the 'familienbaum' instance. It was local in initApp.
-            // Let's make it global in next step or assume we can just close.
-            // For now, Close Sidebar is safe.
             document.getElementById('family-sidebar').classList.remove('active');
         }
     };
@@ -303,6 +229,84 @@ function showAddChildForm(node) {
     status.style.fontSize = "0.9em";
     detailsEl.appendChild(status);
 }
+
+function showAddSpouseForm(node) {
+    const sidebar = document.getElementById('family-sidebar');
+    const titleEl = document.getElementById('sidebar-title');
+    const detailsEl = document.getElementById('sidebar-details');
+    const imageEl = document.getElementById('sidebar-image');
+
+    // Show placeholder image for new spouse
+    const placeholder = "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
+    imageEl.src = placeholder;
+    imageEl.style.display = "inline-block";
+    imageEl.style.cursor = "pointer";
+    imageEl.title = "Fotoğraf eklemek için tıklayın";
+
+    // Reset pending photo (spouses don't have this for now, but keep structure)
+    pendingChildPhoto = null; // Renaming this variable might be good in the future
+
+    // Clear upload status from previous operations (if any)
+    const statusEl = document.getElementById('save-status');
+    if (statusEl) statusEl.innerText = "";
+
+    // Hide delete photo button (no photo yet for new spouse)
+    const deletePhotoBtn = document.getElementById('delete-photo-btn');
+    deletePhotoBtn.style.display = "none";
+
+    // Set a flag that we're in "add spouse" mode
+    imageEl.dataset.addSpouseMode = "true"; // New flag for spouse
+    imageEl.dataset.deletePhoto = "false";
+
+    // Click image to select photo (use normal flow with cropper)
+    imageEl.onclick = () => {
+        document.getElementById('image-upload-input').click();
+    };
+
+    // Set Title
+    titleEl.innerText = "Yeni Eş Ekle";
+
+    // Pre-fill Data
+    const spouseSurname = node.added_data.input.last_name || ""; // Spouse takes same surname initially
+    const emptyData = { last_name: spouseSurname };
+
+    // Render Form
+    renderFormFields(detailsEl, emptyData);
+
+    // Add Buttons
+    const btnContainer = document.createElement("div");
+    btnContainer.style.marginTop = "15px";
+    btnContainer.style.display = "flex";
+    btnContainer.style.justifyContent = "space-between";
+
+    const btnCancel = document.createElement("button");
+    btnCancel.className = "action-btn btn-secondary";
+    btnCancel.innerText = "İptal";
+    btnCancel.onclick = () => {
+        if (typeof currentEditedNode !== 'undefined') {
+            document.getElementById('family-sidebar').classList.remove('active');
+        }
+    };
+
+    const btnConfirm = document.createElement("button");
+    btnConfirm.className = "action-btn btn-success";
+    btnConfirm.innerText = "✅ Eşi Ekle";
+    btnConfirm.onclick = () => submitNewSpouse(node); // New submit function for spouse
+
+    btnContainer.appendChild(btnCancel);
+    btnContainer.appendChild(btnConfirm);
+    detailsEl.appendChild(btnContainer);
+
+    // Add Status Area (re-use add-status or create a new one if needed)
+    const status = document.createElement("div");
+    status.id = "add-status"; // Re-using the same status div as for child
+    status.style.marginTop = "10px";
+    status.style.textAlign = "center";
+    status.style.fontSize = "0.9em";
+    detailsEl.appendChild(status);
+}
+
+
 
 async function submitNewChild(node) {
     const statusEl = document.getElementById('add-status');
@@ -465,6 +469,131 @@ async function submitNewChild(node) {
         document.getElementById('sidebar-image').dataset.addChildMode = "false";
 
         // Close sidebar after a delay to let user see the message
+        setTimeout(() => {
+            document.getElementById('family-sidebar').classList.remove('active');
+        }, 1000);
+
+    } catch (e) {
+        console.error(e);
+        statusEl.innerText = "Hata: " + e.message;
+        statusEl.style.color = "red";
+    }
+}
+
+async function submitNewSpouse(node) {
+    const statusEl = document.getElementById('add-status');
+    const memberId = parseInt(node.data.split("_")[1]);
+
+    // 1. Collect Data
+    const inputs = document.querySelectorAll('#sidebar-details input.sidebar-input, #sidebar-details select.sidebar-input');
+    const updates = {};
+    let hasName = false;
+
+    inputs.forEach(inp => {
+        const key = inp.getAttribute('data-key');
+        const val = inp.value;
+        if (val) {
+            if (key === 'first_name') hasName = true;
+            const colIndex = COLUMN_MAPPING[key];
+            if (colIndex) updates[colIndex] = val;
+        }
+    });
+
+    if (!hasName) {
+        alert("Lütfen en azından bir isim (Ad) girin.");
+        return;
+    }
+
+    // 2. Calculate Insertion Point (Same logic as in original addSpouse)
+    let insertAfterRow = memberId; // Default: After self
+    let checkId = memberId + 1;
+
+    if (window.familyData && window.familyData.members) {
+        while (true) {
+            const nextMem = window.familyData.members["mem_" + checkId];
+            if (!nextMem) break;
+
+            if (nextMem.is_spouse) {
+                insertAfterRow = checkId;
+                checkId++;
+                continue;
+            }
+
+            break; // Stop before children or next family
+        }
+    }
+
+    const targetRow = insertAfterRow + 2; // +2 for 1-based indexing and header row
+
+    // 3. Add System Fields to Updates
+    updates[COLUMN_MAPPING['gen_col']] = "E"; // Spouse generation is 'E'
+    updates[COLUMN_MAPPING['father']] = ""; // Spouses do not have father/mother in this context
+    updates[COLUMN_MAPPING['mother']] = "";
+
+    // IMPORTANT: Spouses must be marked as `is_spouse` for filtering logic
+    updates[COLUMN_MAPPING['note']] = (updates[COLUMN_MAPPING['note']] ? updates[COLUMN_MAPPING['note']] + ", " : "") + "is_spouse:true";
+
+    // 4. Send Request
+    statusEl.innerText = "Ekleniyor...";
+    statusEl.style.color = "orange";
+
+    try {
+        const payload = {
+            action: "addSpouse",
+            row: targetRow,
+            updates: updates // Send full map
+        };
+
+        await fetch(UPLOAD_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+
+        statusEl.innerText = "Eş eklendi!";
+        statusEl.style.color = "green";
+
+        // Handle photo upload (if any)
+        const imageEl = document.getElementById('sidebar-image');
+        const isAddSpouseMode = imageEl.dataset.addSpouseMode === "true"; // Check our new flag
+
+        if (isAddSpouseMode && pendingChildPhoto) { // pendingChildPhoto is misused here, but contains the file
+            statusEl.innerText = "Eş eklendi! Fotoğraf yükleniyor...";
+            statusEl.style.color = "orange";
+
+            try {
+                // Determine the new spouse's member ID
+                // The new spouse row is at targetRow (insertRowsAfter inserts AFTER the specified row, so the new row is targetRow itself if we passed insertAfterRow + 2 as targetRow, which we did)
+                // Member ID = row - 2
+                const newSpouseMemberId = targetRow - 2;
+                const tempNode = {
+                    data: "mem_" + newSpouseMemberId,
+                    added_data: { input: {} }
+                };
+
+                await uploadPhoto(pendingChildPhoto, tempNode);
+
+                statusEl.innerText = "Başarılı! Fotoğraf yüklendi. Sayfayı yenileyin.";
+                statusEl.style.color = "green";
+                alert("Eş ve fotoğraf eklendi. Lütfen sayfayı yenileyin.");
+
+            } catch (photoError) {
+                console.error("Photo upload error:", photoError);
+                statusEl.innerText = "Eş eklendi ama fotoğraf yüklenemedi. Sayfayı yenileyip tekrar deneyin.";
+                statusEl.style.color = "orange";
+                alert("Eş eklendi ama fotoğraf yüklenemedi. Lütfen sayfayı yenileyip fotoğrafı tekrar ekleyin.");
+            }
+            pendingChildPhoto = null;
+            imageEl.dataset.addSpouseMode = "false";
+        } else {
+            statusEl.innerText = "Başarılı! Sayfayı yenileyin.";
+            statusEl.style.color = "green";
+            alert("Eş eklendi. Lütfen sayfayı yenileyin.");
+        }
+
+        imageEl.dataset.addSpouseMode = "false"; // Clear the add spouse mode flag
+
         setTimeout(() => {
             document.getElementById('family-sidebar').classList.remove('active');
         }, 1000);
@@ -929,19 +1058,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const imageEl = document.getElementById('sidebar-image');
                 const isAddChildMode = imageEl.dataset.addChildMode === "true";
+                const isAddSpouseMode = imageEl.dataset.addSpouseMode === "true"; // New check for spouse mode
 
-                if (isAddChildMode) {
-                    // Store cropped file for later upload after child is created
-                    pendingChildPhoto = file;
+                if (isAddChildMode || isAddSpouseMode) { // Check for either add child or add spouse mode
+                    // Store cropped file for later upload after child/spouse is created
+                    pendingChildPhoto = file; // Still using pendingChildPhoto, consider renaming for clarity
 
                     // Show preview in sidebar
                     const tempUrl = URL.createObjectURL(file);
                     imageEl.src = tempUrl;
 
                     // Update upload status
-                    const uploadStatus = document.getElementById('upload-status');
-                    uploadStatus.innerText = "Fotoğraf hazır (çocuk eklendikten sonra yüklenecek)";
-                    uploadStatus.style.color = "blue";
+                    const uploadStatus = document.getElementById('add-status'); // Use add-status
+                    if (uploadStatus) { // Check if element exists
+                        uploadStatus.innerText = `Fotoğraf hazır (${isAddChildMode ? "çocuk" : "eş"} eklendikten sonra yüklenecek)`;
+                        uploadStatus.style.color = "blue";
+                    }
                 } else if (currentEditedNode) {
                     // Normal edit mode: upload immediately
                     uploadPhoto(file, currentEditedNode);
