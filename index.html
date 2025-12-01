@@ -222,11 +222,8 @@
             let inputData = null;
             try {
                 inputData = await loadFromGoogleSheet(SHEET_URL);
-                localStorage.setItem('soyagaci_cached_data', JSON.stringify(inputData));
             } catch (e) {
-                console.warn("Network failed, trying cache...", e);
-                const cached = localStorage.getItem('soyagaci_cached_data');
-                if (cached) inputData = JSON.parse(cached);
+                console.warn("Failed to load data", e);
             }
 
             if (!inputData) {
@@ -234,10 +231,94 @@
                 return;
             }
 
-            // Restore state
-            const lastNodeId = localStorage.getItem('soyagaci_last_node');
-            if (lastNodeId && inputData.members[lastNodeId]) {
-                inputData.start = lastNodeId;
+            // State Management via URL
+            function getUrlState() {
+                const hash = window.location.hash.substring(1);
+                if (!hash) return null;
+                const params = new URLSearchParams(hash);
+                return {
+                    start: params.get("node"),
+                    zoom: params.get("zoom") ? params.get("zoom").split(",").map(Number) : null,
+                    visible: params.get("visible") ? new Set(params.get("visible").split(",")) : null
+                };
+            }
+
+            function updateUrlState() {
+                if (!familienbaum || !familienbaum.g) return;
+
+                const t = d3.zoomTransform(familienbaum.g.node());
+                const zoomStr = `${t.k.toFixed(3)},${t.x.toFixed(1)},${t.y.toFixed(1)}`;
+                
+                const visibleNodes = [];
+                if (familienbaum.dag_all) {
+                    for (let node of familienbaum.dag_all.nodes()) {
+                        if (node.added_data && node.added_data.is_visible) {
+                            visibleNodes.push(node.data);
+                        }
+                    }
+                }
+                
+                const params = new URLSearchParams();
+                if (familienbaum.data.start) params.set("node", familienbaum.data.start);
+                params.set("zoom", zoomStr);
+                if (visibleNodes.length > 0) params.set("visible", visibleNodes.join(","));
+
+                history.replaceState(null, null, "#" + params.toString());
+            }
+
+            // ID Recovery Helper
+            function findClosestId(targetId, members) {
+                if (!targetId) return null;
+                // 1. Exact match
+                if (members[targetId]) return targetId;
+                
+                // 2. Try to recover from date/suffix change
+                if (!targetId.startsWith('mem_')) return null;
+                
+                // Heuristic: Remove the last segment if it's numeric (year or counter)
+                const parts = targetId.split('_');
+                // Expected min: mem_name (2 parts) - but usually mem_name_surname (3) or mem_name_year (3)
+                if (parts.length < 3) return null; 
+                
+                // Try removing up to 2 segments (e.g. year and counter) to find a stable prefix
+                // e.g. mem_ahmet_1980 -> mem_ahmet
+                for (let i = 1; i <= 2; i++) {
+                    if (parts.length <= 2) break;
+                    parts.pop();
+                    const prefix = parts.join('_');
+                    
+                    // Look for any ID starting with this prefix
+                    const match = Object.keys(members).find(id => id.startsWith(prefix));
+                    if (match) {
+                        console.log(`Recovered ID: ${targetId} -> ${match}`);
+                        return match;
+                    }
+                }
+                return null;
+            }
+
+            function resolveIdSet(idSet, members) {
+                const resolved = new Set();
+                if (!idSet) return resolved;
+                for (const id of idSet) {
+                    const match = findClosestId(id, members);
+                    if (match) resolved.add(match);
+                }
+                return resolved;
+            }
+
+            // Check URL state first
+            const urlState = getUrlState();
+            
+            // Determine start node with recovery
+            let requestedStart = (urlState && urlState.start) 
+                ? urlState.start 
+                : localStorage.getItem('soyagaci_last_node');
+
+            let resolvedStart = findClosestId(requestedStart, inputData.members);
+            
+            if (resolvedStart) {
+                inputData.start = resolvedStart;
             }
 
             // Expose data globally for editor
@@ -261,44 +342,70 @@
             }
 
             // We no longer pass 'detailsDiv' to constructor because we manage it globally now
-            let familienbaum = new Familienbaum(window.familyData, svg);
+            let familienbaum = new Familienbaum(window.familyData, svg, () => {
+                // Debounce URL update to avoid history flood during animation
+                if (window.urlUpdateTimeout) clearTimeout(window.urlUpdateTimeout);
+                window.urlUpdateTimeout = setTimeout(updateUrlState, 500);
+            });
 
             // Restore visible nodes
-            const savedVisibleNodesJson = localStorage.getItem('soyagaci_visible_nodes');
-            if (savedVisibleNodesJson) {
-                try {
-                    const savedVisibleNodes = new Set(JSON.parse(savedVisibleNodesJson));
-                    if (familienbaum.dag_all) {
-                        for (let node of familienbaum.dag_all.nodes()) {
-                            if (savedVisibleNodes.has(node.data)) {
-                                node.added_data.is_visible = true;
+            if (urlState && urlState.visible) {
+                 if (familienbaum.dag_all) {
+                    const resolvedVisible = resolveIdSet(urlState.visible, inputData.members);
+                    // Reset all to invisible first (except start, which reset_dags handles, but we overwrite)
+                    for (let node of familienbaum.dag_all.nodes()) {
+                        node.added_data.is_visible = resolvedVisible.has(node.data);
+                    }
+                    // Ensure start node is visible
+                    const startNode = familienbaum.dag_all.find_node(window.familyData.start);
+                    if (startNode) startNode.added_data.is_visible = true;
+                }
+            } else {
+                const savedVisibleNodesJson = localStorage.getItem('soyagaci_visible_nodes');
+                if (savedVisibleNodesJson) {
+                    try {
+                        const rawSet = new Set(JSON.parse(savedVisibleNodesJson));
+                        const resolvedVisible = resolveIdSet(rawSet, inputData.members);
+                        if (familienbaum.dag_all) {
+                            for (let node of familienbaum.dag_all.nodes()) {
+                                if (resolvedVisible.has(node.data)) {
+                                    node.added_data.is_visible = true;
+                                }
                             }
                         }
-                    }
-                } catch (e) { console.warn("Failed to restore visible nodes", e); }
+                    } catch (e) { console.warn("Failed to restore visible nodes", e); }
+                }
             }
 
             familienbaum.draw(false); // Draw without auto-centering initially
 
             // Restore zoom/pan
-            const savedTransformJson = localStorage.getItem('soyagaci_view_transform');
-            if (savedTransformJson) {
-                try {
-                    const t = JSON.parse(savedTransformJson);
-                    const transform = d3.zoomIdentity.translate(t.x, t.y).scale(t.k);
+            if (urlState && urlState.zoom) {
+                const [k, x, y] = urlState.zoom;
+                if (!isNaN(k) && !isNaN(x) && !isNaN(y)) {
+                    const transform = d3.zoomIdentity.translate(x, y).scale(k);
                     svg.call(familienbaum.zoom.transform, transform);
-                } catch (e) { console.warn("Failed to restore transform", e); }
+                }
             } else {
-                // If no saved transform, do the initial center
-                // We need to find the current node to center on
-                let current_node = familienbaum.dag.find_node(window.familyData.start);
-                if (current_node) {
-                    svg.transition().duration(0).call(
-                        familienbaum.zoom.transform,
-                        d3.zoomTransform(familienbaum.g.node())
-                            .translate(current_node.added_data.y0 - current_node.y,
-                                current_node.added_data.x0 - current_node.x),
-                    );
+                const savedTransformJson = localStorage.getItem('soyagaci_view_transform');
+                if (savedTransformJson) {
+                    try {
+                        const t = JSON.parse(savedTransformJson);
+                        const transform = d3.zoomIdentity.translate(t.x, t.y).scale(t.k);
+                        svg.call(familienbaum.zoom.transform, transform);
+                    } catch (e) { console.warn("Failed to restore transform", e); }
+                } else {
+                    // If no saved transform, do the initial center
+                    // We need to find the current node to center on
+                    let current_node = familienbaum.dag.find_node(window.familyData.start);
+                    if (current_node) {
+                        svg.transition().duration(0).call(
+                            familienbaum.zoom.transform,
+                            d3.zoomTransform(familienbaum.g.node())
+                                .translate(current_node.added_data.y0 - current_node.y,
+                                    current_node.added_data.x0 - current_node.x),
+                        );
+                    }
                 }
             }
 

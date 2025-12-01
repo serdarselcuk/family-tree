@@ -3,6 +3,17 @@ function clean(txt) {
     return (txt || "").toString().trim();
 }
 
+function slugify(text) {
+    const trMap = {
+        'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+        'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
+    };
+    return text.split('').map(c => trMap[c] || c).join('')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+}
+
 // Helper to parse the generation/id column
 function parseGen(val) {
     const s = clean(val).toUpperCase();
@@ -69,6 +80,9 @@ function processSheetData(rows) {
     // spouseNameMap[5] = { "Sakine": "mem_16", "Funduka": "mem_17" }
     const spouseNameMap = {};
 
+    // To track duplicates for stable ID generation
+    const idCounts = {};
+
     // Helper to create/get union
     function getUnion(p1, p2) {
         const uKey = [p1, p2 || "unknown"].sort().join("_");
@@ -89,10 +103,33 @@ function processSheetData(rows) {
 
         if (genType === null && rawGen === "") return;
 
-        const id = "mem_" + index;
-
         const firstName = clean(row[COL_NAME]);
         const lastName = clean(row[COL_SURNAME]);
+        const birthDate = clean(row[COL_BIRTH_DATE]);
+
+        // Generate Stable ID
+        let baseId = slugify(firstName + "_" + lastName);
+        if (birthDate) {
+            // Try to extract year 4 digits
+            const yearMatch = birthDate.match(/\d{4}/);
+            if (yearMatch) baseId += "_" + yearMatch[0];
+            else baseId += "_" + slugify(birthDate);
+        }
+
+        if (!baseId) baseId = "unknown";
+
+        let stableId = "mem_" + baseId;
+
+        // Handle duplicates
+        if (idCounts[stableId]) {
+            idCounts[stableId]++;
+            stableId += "_" + idCounts[stableId];
+        } else {
+            idCounts[stableId] = 1;
+        }
+
+        const id = stableId;
+
         let fullName = firstName;
         if (lastName) fullName += " " + lastName;
         if (!fullName) fullName = "Unknown";
@@ -191,6 +228,7 @@ function processSheetData(rows) {
 }
 
 async function loadFromGoogleSheet(url) {
+    const cacheKey = "soyagaci_data_" + slugify(url);
     try {
         // Use d3.text to get raw CSV content
         const rawText = await d3.text(url);
@@ -205,8 +243,19 @@ async function loadFromGoogleSheet(url) {
 
         const processed = processSheetData(dataRows);
         console.log("Graph built:", processed);
+        
+        try {
+            localStorage.setItem(cacheKey, JSON.stringify(processed));
+        } catch (e) {
+            console.warn("Failed to save to cache", e);
+        }
+        
         return processed;
     } catch (error) {
+        console.warn("Network failed, trying cache...", error);
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) return JSON.parse(cached);
+        
         console.error("Error loading sheet:", error);
         alert("Error loading data. Check console.");
         throw error;
