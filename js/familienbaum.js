@@ -5,7 +5,11 @@ class Familienbaum {
 		this.svg = svg;
 		// Prepare things related to d3 and SVG
 		this.g = this.svg.append("g");
-		this.zoom = d3.zoom().on("zoom", event => this.g.attr("transform", event.transform));
+		this.zoom = d3.zoom().on("zoom", event => {
+			this.g.attr("transform", event.transform);
+			// Debounce URL update on zoom
+			if (typeof debounceUpdateURL === 'function') debounceUpdateURL();
+		});
 		this.svg.call(this.zoom);
 		// Make scroll zoom slower and smoother
 		this.zoom.wheelDelta(event => -event.deltaY * (event.deltaMode === 1 ? 0.05 : 0.0005)); // Default is 0.002
@@ -99,6 +103,9 @@ class Familienbaum {
 			node.added_data.x0 = node.x;
 			node.added_data.y0 = node.y;
 		}
+
+		// Update URL after drawing to reflect new state
+		if (typeof debounceUpdateURL === 'function') debounceUpdateURL();
 	}
 
 	draw_nodes(nodes, current_node) {
