@@ -27,7 +27,26 @@ fi
 echo "📤 Deploying to gh-pages branch..."
 git checkout gh-pages
 
+# SAFETY CHECK: Verify we're actually on gh-pages
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "gh-pages" ]; then
+  echo "❌ ERROR: Not on gh-pages branch! Aborting to prevent data loss."
+  echo "Current branch: $CURRENT_BRANCH"
+  git checkout master
+  exit 1
+fi
+
+echo "⚠️  About to delete all files in gh-pages branch (except .git)"
+echo "This is normal for deployment, but please confirm:"
+read -p "Continue? (yes/no): " -r
+if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
+  echo "Deployment cancelled"
+  git checkout master
+  exit 0
+fi
+
 # Remove old files but keep .git
+echo "🗑️  Removing old build files..."
 find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} +
 
 # Copy new build files
