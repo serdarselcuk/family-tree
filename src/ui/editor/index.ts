@@ -297,14 +297,19 @@ export function initEditor(familienbaum: Familienbaum) {
         const btnSheet = document.getElementById('btn-open-sheet');
         if (btnSheet) {
             const memberData = (node_of_dag.added_data as any).input;
+            console.log("DEBUG - Member data for", node_of_dag.data, ":", memberData);
+            console.log("DEBUG - Row index:", memberData?.row_index);
+
             if (memberData && memberData.row_index) {
                 const row = parseInt(memberData.row_index);
+                console.log("DEBUG - Parsed row:", row);
                 const sheetEditUrl = `https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit#gid=790197592&range=${row}:${row}`;
 
                 btnSheet.onclick = () => window.open(sheetEditUrl, "_blank");
                 btnSheet.innerText = `✏️ Bu Satırı Düzenle (Satır ${row})`;
             } else {
                 // Fallback: Just open the sheet without a specific row
+                console.warn("DEBUG - No row_index found for node:", node_of_dag.data);
                 btnSheet.onclick = () => window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
                 btnSheet.innerText = "Google Tablosunu Aç";
             }
