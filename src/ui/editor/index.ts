@@ -303,14 +303,8 @@ export function initEditor(familienbaum: Familienbaum) {
 
                 btnSheet.onclick = () => window.open(sheetEditUrl, "_blank");
                 btnSheet.innerText = `✏️ Bu Satırı Düzenle (Satır ${row})`;
-            } else if (node_of_dag.data.startsWith("mem_")) {
-                const idx = parseInt(node_of_dag.data.split("_")[1]);
-                const row = idx + 2;
-                const sheetEditUrl = `https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit#gid=790197592&range=${row}:${row}`;
-
-                btnSheet.onclick = () => window.open(sheetEditUrl, "_blank");
-                btnSheet.innerText = `✏️ Bu Satırı Düzenle (Satır ${row})`;
             } else {
+                // Fallback: Just open the sheet without a specific row
                 btnSheet.onclick = () => window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
                 btnSheet.innerText = "Google Tablosunu Aç";
             }
