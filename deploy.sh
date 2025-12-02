@@ -49,13 +49,6 @@ fi
 
 echo "⚠️  About to delete all files in gh-pages branch (except .git)"
 echo "This is normal for deployment, but please confirm:"
-read -p "Continue? (yes/no): " -r
-if [[ ! $REPLY =~ ^[Yy]es$ ]]; then
-  echo "Deployment cancelled"
-  rm -rf "$TEMP_DIST"
-  git checkout master
-  exit 0
-fi
 
 # Remove old files but keep .git
 echo "🗑️  Removing old build files..."
