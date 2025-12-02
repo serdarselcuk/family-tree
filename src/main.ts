@@ -401,12 +401,8 @@ async function init() {
         shareBtn.addEventListener('click', () => shareCurrentState(store.getState()));
     }
 
-    const openSheetBtn = document.getElementById('btn-open-sheet');
-    if (openSheetBtn) {
-        openSheetBtn.addEventListener('click', () => {
-            window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
-        });
-    }
+    // Note: btn-open-sheet click handler is set dynamically in editor/index.ts
+    // based on which person is selected, so we don't set a global handler here
 
     const closeSidebarBtn = document.querySelector('.close-btn');
     if (closeSidebarBtn) {
