@@ -1,30 +1,24 @@
 /* Modern Color Scheme Variables */
 :root {
-    --primary-dark: #312e81;
-    /* Indigo 900 */
-    --primary: #4f46e5;
-    /* Indigo 600 */
-    --primary-light: #818cf8;
-    /* Indigo 400 */
-    --accent: #f59e0b;
-    /* Amber 500 */
-    --accent-dark: #d97706;
-    /* Amber 600 */
-    --success: #10b981;
-    /* Emerald 500 */
-    --danger: #ef4444;
-    /* Red 500 */
-    --background: #0f172a;
-    /* Slate 900 */
+    --primary-dark: #312e81; /* Indigo 900 */
+    --primary: #4f46e5;      /* Indigo 600 */
+    --primary-light: #818cf8; /* Indigo 400 */
+    --accent: #f59e0b;       /* Amber 500 */
+    --accent-dark: #d97706;  /* Amber 600 */
+    --success: #10b981;      /* Emerald 500 */
+    --danger: #ef4444;       /* Red 500 */
+    --background: #0f172a;   /* Slate 900 */
     --surface: rgba(255, 255, 255, 0.9);
     --surface-dark: rgba(15, 23, 42, 0.8);
-    --text-primary: #1e293b;
-    /* Slate 800 */
-    --text-secondary: #475569;
-    /* Slate 600 */
-    --border: #e2e8f0;
-    /* Slate 200 */
-    --shadow: rgba(0, 0, 0, 0.1);
+    --text-primary: #1e293b; /* Slate 800 */
+    --text-secondary: #475569; /* Slate 600 */
+    --border: #e2e8f0;       /* Slate 200 */
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 body {
@@ -70,44 +64,32 @@ body {
 }
 
 .non-highlighted {
-    fill: #94a3b8;
-    /* Slate 400 */
-    stroke: #64748b;
-    /* Slate 500 */
+    fill: #94a3b8; /* Slate 400 */
+    stroke: #64748b; /* Slate 500 */
     stroke-width: 1px;
     opacity: 0.4;
 }
 
 /* Deceased Member Style */
 .member.deceased {
-    fill: #64748b !important;
-    /* Slate 500 - Darker Grey */
-    stroke: #334155 !important;
-    /* Slate 700 */
+    fill: #64748b !important; /* Slate 500 */
+    stroke: #334155 !important; /* Slate 700 */
     stroke-width: 2.5px !important;
     stroke-dasharray: 4 2;
-    /* Dashed border for distinct look */
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
     opacity: 0.75 !important;
-    /* Make deceased nodes generally less prominent */
 }
 
-/* Collapsed (Highlighted) Deceased Member */
 .member.deceased.highlighted {
     stroke: var(--accent) !important;
-    /* Amber stroke to signal interactivity */
     stroke-width: 3px !important;
     stroke-dasharray: none !important;
-    /* Solid border for active state */
     filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)) !important;
-    /* Amber glow - slightly less prominent */
     fill: #475569 !important;
-    /* Keep darker grey fill */
 }
 
 .member.deceased:hover {
     fill: #475569 !important;
-    /* Slate 600 */
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) !important;
 }
 
@@ -116,8 +98,6 @@ body {
     filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6)) !important;
 }
 
-/* Grayscale image for deceased members */
-/* The image is a sibling of the circle in the SVG structure */
 .member.deceased~image {
     filter: grayscale(100%) contrast(1.1) brightness(0.9) !important;
     opacity: 0.9;
@@ -127,7 +107,6 @@ body {
     font-family: 'Outfit', sans-serif;
     font-size: 14px;
     fill: #e2e8f0;
-    /* Slate 200 */
     pointer-events: none;
     font-weight: 500;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
@@ -137,7 +116,6 @@ body {
 .link {
     fill: none;
     stroke: #64748b;
-    /* Slate 500 */
     stroke-width: 1.5px;
     z-index: 6;
     opacity: 0.4;
@@ -171,6 +149,37 @@ body.show-plus .plus-label {
     pointer-events: auto;
 }
 
+/* --- GLASSMORPHISM CONTROLS --- */
+.glass-btn {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: white;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Outfit', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.3px;
+}
+
+.glass-btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
+}
+
+.glass-btn:active {
+    transform: translateY(0);
+}
+
 /* --- MODERN SIDEBAR STYLES --- */
 #family-sidebar {
     position: fixed;
@@ -179,8 +188,8 @@ body.show-plus .plus-label {
     width: 400px;
     height: calc(100vh - 40px);
     background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: 24px 0 0 24px;
     box-shadow: -10px 0 40px rgba(0, 0, 0, 0.2);
     z-index: 9999;
@@ -238,17 +247,13 @@ body.show-plus .plus-label {
     margin: 0;
     font-family: 'Outfit', sans-serif;
     font-size: 1.5rem;
-    /* Reduced from 1.75rem */
     font-weight: 700;
     color: white;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     letter-spacing: -0.5px;
     line-height: 1.2;
-    /* Better line spacing for wrapped text */
     word-break: break-word;
-    /* Ensure long names wrap */
     padding-right: 10px;
-    /* Prevent overlap with close button */
 }
 
 .close-btn {
@@ -283,30 +288,26 @@ body.show-plus .plus-label {
     background: rgba(255, 255, 255, 0.6);
     border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
     border: 1px solid rgba(255, 255, 255, 0.5);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sidebar-section:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-md);
 }
 
 /* Input Fields */
 .sidebar-input {
     width: 100%;
     box-sizing: border-box;
-    /* Fix overflow */
-    padding: 10px 12px;
-    /* Reduced padding */
+    padding: 12px 14px;
     margin-bottom: 0;
-    /* Remove margin, let info-row handle it */
     border: 1px solid var(--border);
     border-radius: 12px;
-    font-size: 0.9rem;
-    /* Slightly smaller font */
+    font-size: 0.95rem;
     transition: all 0.2s ease;
     background: rgba(255, 255, 255, 0.8);
     color: var(--text-primary);
@@ -336,36 +337,24 @@ select.sidebar-input {
     align-items: center;
     justify-content: center;
     width: auto;
-    padding: 10px 16px;
-    /* Reduced padding */
+    padding: 12px 18px;
     margin-bottom: 0;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
     font-family: 'Inter', sans-serif;
     letter-spacing: 0.3px;
     white-space: nowrap;
-    /* Prevent wrapping */
     flex: 1;
-    /* Allow buttons to grow evenly in flex containers */
-}
-
-.button-row {
-    margin-top: 15px;
-    /* Display handled in inline styles for now, or we can enforce here */
-}
-
-.button-row .action-btn {
-    margin-bottom: 0;
 }
 
 .action-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
 }
 
 .action-btn:active {
@@ -412,8 +401,7 @@ select.sidebar-input {
 
 /* Info Rows */
 .info-row {
-    margin-bottom: 7px;
-    /* Reduced from 10px */
+    margin-bottom: 10px;
     padding-bottom: 0;
     border-bottom: none;
 }
@@ -427,24 +415,21 @@ select.sidebar-input {
 }
 
 /* Photo Section Enhancements */
-/* Photo Section Enhancements */
 .photo-section {
-    padding: 2px !important;
-    /* Drastically reduced to 2px */
+    padding: 4px !important;
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4)) !important;
     text-align: center;
 }
 
 #sidebar-image {
     border-radius: 16px !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: var(--shadow-lg) !important;
     border: none !important;
-    /* Removed 4px border */
 }
 
 #sidebar-image:hover {
     transform: scale(1.02);
-    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: var(--shadow-xl) !important;
 }
 
 #delete-photo-btn {
@@ -459,7 +444,7 @@ select.sidebar-input {
 
 /* Status Messages */
 #save-status {
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 8px;
     font-size: 0.9rem;
     font-weight: 500;
@@ -473,9 +458,9 @@ select.sidebar-input {
 .edit-form {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 .sidebar-section+.sidebar-section {
-    margin-top: 12px;
+    margin-top: 16px;
 }
