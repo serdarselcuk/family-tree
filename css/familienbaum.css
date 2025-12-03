@@ -80,20 +80,20 @@ body {
     opacity: 0.75 !important;
 }
 
-.member.deceased.highlighted {
-    stroke: var(--accent) !important;
-    stroke-width: 3px !important;
-    stroke-dasharray: none !important;
-    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)) !important;
-    fill: #475569 !important;
-}
-
 /* Deceased nodes that are uncollapsed or have no children - less prominent amber */
 .member.deceased.deceased-uncollapsed {
     stroke: rgba(245, 158, 11, 0.5) !important; /* Semi-transparent amber */
     stroke-width: 2px !important;
     stroke-dasharray: none !important;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
+}
+
+.member.deceased.highlighted {
+    stroke: var(--accent) !important;
+    stroke-width: 3px !important;
+    stroke-dasharray: none !important;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)) !important;
+    fill: #475569 !important;
 }
 
 .member.deceased.deceased-uncollapsed:hover {
