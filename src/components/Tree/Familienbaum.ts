@@ -209,15 +209,27 @@ export class Familienbaum {
 
     handleNodeDblClick(node: D3Node) {
         let node_of_dag_all = this.dag_all.find_node(node.data);
-        // Collapse Ancestors: Hide parents
+        // Collapse Ancestors: Hide parents recursively upward
         // Parents: Member <- Union <- Parent
         // dag_all.parents(node) returns Unions
-        for (let unionNode of this.dag_all.parents(node_of_dag_all)) {
-            unionNode.added_data.is_visible = false;
-            for (let parentNode of this.dag_all.parents(unionNode)) {
-                parentNode.added_data.is_visible = false;
+
+        // Recursively hide all ancestors
+        const hideAncestorsRecursive = (currentNode: D3Node) => {
+            for (let unionNode of this.dag_all.parents(currentNode)) {
+                unionNode.added_data.is_visible = false;
+                for (let parentNode of this.dag_all.parents(unionNode)) {
+                    parentNode.added_data.is_visible = false;
+                    // Recurse upward
+                    hideAncestorsRecursive(parentNode);
+                }
             }
-        }
+        };
+
+        hideAncestorsRecursive(node_of_dag_all);
+
+        // Keep the clicked node visible as the new root
+        node_of_dag_all.added_data.is_visible = true;
+
         this.draw(false, node.data); // Don't recenter to prevent drift
     }
 
