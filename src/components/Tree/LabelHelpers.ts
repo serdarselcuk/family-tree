@@ -35,7 +35,7 @@ export function set_multiline(d3_element: d3.Selection<SVGGElement, D3Node, any,
             all_names += " " + names[i];
         }
         if (get_death_date(node)) {
-            all_names += " ☽";
+            // all_names += " ☽";
         }
         return all_names;
     }

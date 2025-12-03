@@ -42,7 +42,10 @@ export function add_images(group: d3.Selection<SVGGElement, D3Node, SVGGElement,
         .append("circle")
         .attr("r", get_node_size() - 1.0);
     let image_size = 2.0 * get_node_size();
-    group.append("image")
+    
+    // Only add image if path exists
+    group.filter(node => get_image_path(node) !== "")
+        .append("image")
         .attr("x", -image_size / 2.0)
         .attr("y", -image_size / 2.0)
         .attr("width", image_size)
@@ -51,4 +54,17 @@ export function add_images(group: d3.Selection<SVGGElement, D3Node, SVGGElement,
         .attr("referrerpolicy", "no-referrer")
         .attr("clip-path", node => "url(#" + get_clip_path_id(node) + ")")
         .attr("cursor", "pointer");
+
+    // Add crescent symbol if deceased and NO image
+    group.filter(node => get_image_path(node) === "" && get_death_date(node) !== "")
+        .append("text")
+        .attr("class", "deceased-symbol")
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("font-size", get_node_size() * 1.1)
+        .attr("dy", "0em") // vertical adjustment to center
+        .attr("fill", "#FFFFFF") // This might not affect all emojis, but keeping it
+        .style("filter", "grayscale(100%)") // Force black and white
+        .style("pointer-events", "none")
+        .text("🪦");
 }
