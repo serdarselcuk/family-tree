@@ -110,6 +110,7 @@ async function init() {
 
     // UI Elements
     const globalToggle = document.getElementById('patrilineal-global-toggle');
+    const toggleIcon = document.getElementById('toggle-icon');
     const toggleText = document.getElementById('toggle-text');
     const svg = d3.select("#tree-container").append("svg").attr("id", "tree-svg");
 
@@ -136,13 +137,15 @@ async function init() {
 
         if (store.getState().isPatrilineal) {
             displayData = filterPatrilineal(currentFullData);
-            if (globalToggle && toggleText) {
+            if (globalToggle && toggleIcon && toggleText) {
                 globalToggle.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                toggleIcon.textContent = '👨‍👦‍👦';
                 toggleText.textContent = 'Tüm Soy Ağacı';
             }
         } else {
-            if (globalToggle && toggleText) {
+            if (globalToggle && toggleIcon && toggleText) {
                 globalToggle.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                toggleIcon.textContent = '👨‍👦';
                 toggleText.textContent = 'Sadece Erkek Soyu';
             }
         }
