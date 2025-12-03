@@ -18,22 +18,32 @@ initDarkMode();
 // Main initialization
 async function init() {
     let inputData: FamilyData | null = null;
-    try {
-        // Add cache-busting parameter if present in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const nocache = urlParams.get('nocache');
-        let fetchUrl = GOOGLE_SHEET_CSV_URL;
-        if (nocache) {
-            // Add timestamp to Google Sheet URL to bypass cache
-            fetchUrl = `${GOOGLE_SHEET_CSV_URL}&_=${nocache}`;
-        }
 
-        inputData = await loadFromGoogleSheet(fetchUrl);
+    // Check if we're doing a reset (skip localStorage)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isReset = urlParams.has('reset');
+
+    if (isReset) {
+        console.log('Reset mode: clearing localStorage and fetching fresh data');
+        localStorage.clear();
+    }
+
+    try {
+        inputData = await loadFromGoogleSheet(GOOGLE_SHEET_CSV_URL);
         localStorage.setItem('soyagaci_cached_data', JSON.stringify(inputData));
+        console.log('Data loaded from Google Sheets');
     } catch (e) {
-        console.warn("Network failed, trying cache...", e);
-        const cached = localStorage.getItem('soyagaci_cached_data');
-        if (cached) inputData = JSON.parse(cached);
+        // Only try cache if NOT in reset mode
+        if (!isReset) {
+            console.warn("Network failed, trying cache...", e);
+            const cached = localStorage.getItem('soyagaci_cached_data');
+            if (cached) {
+                inputData = JSON.parse(cached);
+                console.log('Loading state from localStorage');
+            }
+        } else {
+            console.error("Reset mode: network failed and cannot use cache", e);
+        }
     }
 
     if (!inputData) {
@@ -410,12 +420,8 @@ async function init() {
     const resetViewBtn = document.getElementById('reset-view-btn');
     if (resetViewBtn) {
         resetViewBtn.addEventListener('click', () => {
-            // Clear localStorage cache
-            localStorage.clear();
-
-            // Reload with cache-busting parameter to force fresh data fetch
-            const timestamp = Date.now();
-            window.location.href = `${window.location.pathname}?nocache=${timestamp}`;
+            // Reload with reset parameter - localStorage will be cleared on next page load
+            window.location.href = `${window.location.pathname}?reset=1`;
         });
     }
 
