@@ -16,6 +16,18 @@ export function get_css_class(node: D3Node) {
     }
     if (get_death_date(node)) {
         cssClass += " deceased";
+
+        // Check if node has children
+        const children = node.children ? node.children() : [];
+        const hasChildren = children.length > 0;
+
+        // Check if any children are visible (node is uncollapsed)
+        const hasVisibleChildren = hasChildren && children.some(child => child.added_data.is_visible);
+
+        // If node has no children OR is uncollapsed, use less prominent styling
+        if (!hasChildren || hasVisibleChildren) {
+            cssClass += " deceased-uncollapsed";
+        }
     }
     return cssClass;
 }
