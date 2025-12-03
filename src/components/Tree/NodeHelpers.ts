@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { D3Node } from '../../types/types';
-import { is_member, get_death_date, get_image_path } from './dagWithFamilyData';
+import { is_member, get_death_date, get_image_path, get_gender } from './dagWithFamilyData';
 
 export function get_node_size() {
     return 28;
@@ -61,10 +61,28 @@ export function add_images(group: d3.Selection<SVGGElement, D3Node, SVGGElement,
         .attr("class", "deceased-symbol")
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "central")
-        .attr("font-size", get_node_size() * 1.1)
+        .attr("font-size", get_node_size() * 1.0)
         .attr("dy", "0em") // vertical adjustment to center
         .attr("fill", "#FFFFFF") // This might not affect all emojis, but keeping it
-        .style("filter", "grayscale(100%)") // Force black and white
+        .style("filter", "grayscale(70%)") // Force black and white with 70% intensity
         .style("pointer-events", "none")
-        .text("🪦");
+        .text("🕊️"); // Changed from 🪦 to 🕊️
+
+    // Add gender symbol if not deceased, NO image, and is a member
+    group.filter(node => get_image_path(node) === "" && get_death_date(node) === "" && is_member(node))
+        .append("text")
+        .attr("class", "gender-symbol")
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("font-size", get_node_size() * 1.0)
+        .attr("dy", "0em")
+        .attr("fill", "#FFFFFF") // White for consistency
+        .style("filter", "grayscale(70%)") // Apply grayscale filter with 70% intensity
+        .style("pointer-events", "none")
+        .text(node => {
+            const gender = get_gender(node);
+            if (gender === 'E') return '👔'; // Male is Necktie
+            if (gender === 'K') return '🎀'; // Female is Ribbon Bow
+            return '👤'; // Default for unknown/other gender
+        });
 }

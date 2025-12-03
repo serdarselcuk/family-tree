@@ -156,3 +156,10 @@ function get_data_and_xy(dag_1: DagWithFamilyData, dag_2: DagWithFamilyData) {
 export function is_member(node: D3Node): boolean {
     return (node.added_data as any).input != undefined;
 }
+
+export function get_gender(node: D3Node): 'E' | 'K' | undefined {
+    if (!(node.added_data as any).input) return undefined;
+    const input = (node.added_data as any).input;
+    return input.gender;
+}
+
