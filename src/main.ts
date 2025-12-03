@@ -354,30 +354,6 @@ async function init() {
         renderTree();
     }, 50);
 
-    // Add Reset View Button
-    const controlsDiv = document.querySelector('.controls') || document.body;
-    const resetBtn = document.createElement('button');
-    resetBtn.textContent = '⟲';
-    resetBtn.title = "Görünümü Sıfırla";
-    resetBtn.className = "control-btn";
-    resetBtn.style.marginLeft = "10px";
-    resetBtn.onclick = () => {
-        if (familienbaum) {
-            store.setTransform({ k: 1, x: 0, y: 0 }); // Clear saved transform
-            store.setVisibleNodes(new Set()); // Clear saved visibility (optional, maybe just recenter?)
-            // Actually, just recenter on current node is better
-            const current = store.getState().selectedNodeId || familienbaum.data.start;
-            familienbaum.draw(true, current);
-            updateURL(store.getState());
-        }
-    };
-    // Insert after toggle if exists
-    if (toggleText && toggleText.parentNode) {
-        toggleText.parentNode.appendChild(resetBtn);
-    } else {
-        controlsDiv.appendChild(resetBtn);
-    }
-
     // Event Listeners
     if (globalToggle) {
         globalToggle.addEventListener('click', () => {
