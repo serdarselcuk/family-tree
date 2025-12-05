@@ -25,29 +25,64 @@ export function dag_with_family_data(links: Array<[string, string]>, input_per_n
     return new DagWithFamilyData(links, input_per_node_id);
 }
 
-export function get_name(node: D3Node): string {
-    if (!(node.added_data as any).input) return "?";
+/**
+ * Generic field getter that handles multi-language field name lookup
+ * @param node - The D3Node to extract data from
+ * @param keys - Array of possible field names (e.g., German and English variants)
+ * @param defaultValue - Value to return if field not found
+ * @param checkEmpty - If true, skip empty string values and continue searching
+ * @returns The field value or defaultValue
+ */
+function getField(
+    node: D3Node,
+    keys: string[],
+    defaultValue: string = "",
+    checkEmpty: boolean = false
+): string {
+    if (!(node.added_data as any).input) return defaultValue;
     const input = (node.added_data as any).input;
-    for (let key of ["Name", "name"])
-        if (input.hasOwnProperty(key))
-            if (input[key] != "") return input[key];
-    return "?";
+
+    for (let key of keys) {
+        if (input.hasOwnProperty(key)) {
+            const value = input[key];
+            if (!checkEmpty || value !== "") {
+                return value;
+            }
+        }
+    }
+    return defaultValue;
+}
+
+/**
+ * Generic field getter for Member objects (bypasses node wrapper)
+ */
+function getFieldFromMember(
+    member: Member,
+    keys: string[],
+    defaultValue: string = "",
+    checkEmpty: boolean = false
+): string {
+    for (let key of keys) {
+        if (member.hasOwnProperty(key)) {
+            const value = (member as any)[key];
+            if (!checkEmpty || value !== "") {
+                return value;
+            }
+        }
+    }
+    return defaultValue;
+}
+
+export function get_name(node: D3Node): string {
+    return getField(node, ["Name", "name"], "?", true);
 }
 
 export function get_second_names(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["Zweitnamen", "second_names"])
-        if (input.hasOwnProperty(key))
-            if (input[key] != "") return input[key];
-    return "";
+    return getField(node, ["Zweitnamen", "second_names"], "", true);
 }
 
 export function get_birth_date_of_member(member: Member): string {
-    for (let key of ["Geburtstag", "birth_date"])
-        if (member.hasOwnProperty(key))
-            if (member[key] != "") return member[key];
-    return "?";
+    return getFieldFromMember(member, ["Geburtstag", "birth_date"], "?", true);
 }
 
 export function get_birth_date(node: D3Node): string {
@@ -56,52 +91,29 @@ export function get_birth_date(node: D3Node): string {
 }
 
 export function get_death_date(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["Todestag", "death_date"])
-        if (input.hasOwnProperty(key)) return input[key];
-    return "";
+    return getField(node, ["Todestag", "death_date"], "", false);
 }
 
 export function get_birth_place(node: D3Node): string {
-    if (!(node.added_data as any).input) return "?";
-    const input = (node.added_data as any).input;
-    for (let key of ["Geburtsort", "birth_place"])
-        if (input.hasOwnProperty(key))
-            if (input[key] != "") return input[key];
-    return "";
+    // Note: Returns empty string (not "?") if not found, despite "?" for missing input
+    const result = getField(node, ["Geburtsort", "birth_place"], "", true);
+    return result || (!(node.added_data as any).input ? "?" : "");
 }
 
 export function get_death_place(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["Todesort", "death_place"])
-        if (input.hasOwnProperty(key)) return input[key];
-    return "";
+    return getField(node, ["Todesort", "death_place"], "", false);
 }
 
 export function get_marriage(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["Hochzeit", "marriage"])
-        if (input.hasOwnProperty(key)) return input[key];
-    return "";
+    return getField(node, ["Hochzeit", "marriage"], "", false);
 }
 
 export function get_occupation(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["Beruf", "occupation"])
-        if (input.hasOwnProperty(key)) return input[key];
-    return "";
+    return getField(node, ["Beruf", "occupation"], "", false);
 }
 
 export function get_note(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["Notiz", "note"])
-        if (input.hasOwnProperty(key)) return input[key];
-    return "";
+    return getField(node, ["Notiz", "note"], "", false);
 }
 
 export function get_year_from_string(date_string: string, default_year: number): number {
@@ -122,11 +134,7 @@ export function get_year_of_birth_date(node: D3Node): number {
 }
 
 export function get_image_path(node: D3Node): string {
-    if (!(node.added_data as any).input) return "";
-    const input = (node.added_data as any).input;
-    for (let key of ["image_path"])
-        if (input.hasOwnProperty(key)) return input[key];
-    return "";
+    return getField(node, ["image_path"], "", false);
 }
 
 function get_data_and_xy(dag_1: DagWithFamilyData, dag_2: DagWithFamilyData) {
