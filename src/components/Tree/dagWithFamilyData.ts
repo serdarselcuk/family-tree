@@ -1,6 +1,7 @@
 import { DagWithRelations } from './dagWithRelations';
 import { D3Node, Member } from '../../types/types';
 import { LAYOUT_CONSTANTS } from '../../constants/layout';
+import { FIELD_MAPPINGS } from '../../constants/fieldMappings';
 
 export class DagWithFamilyData extends DagWithRelations {
     constructor(links: Array<[string, string]>, input_per_node_id: { [key: string]: Member } = {}) {
@@ -75,15 +76,15 @@ function getFieldFromMember(
 }
 
 export function get_name(node: D3Node): string {
-    return getField(node, ["Name", "name"], "?", true);
+    return getField(node, FIELD_MAPPINGS.name, "?", true);
 }
 
 export function get_second_names(node: D3Node): string {
-    return getField(node, ["Zweitnamen", "second_names"], "", true);
+    return getField(node, FIELD_MAPPINGS.secondNames, "", true);
 }
 
 export function get_birth_date_of_member(member: Member): string {
-    return getFieldFromMember(member, ["Geburtstag", "birth_date"], "?", true);
+    return getFieldFromMember(member, FIELD_MAPPINGS.birthDate, "?", true);
 }
 
 export function get_birth_date(node: D3Node): string {
@@ -92,29 +93,29 @@ export function get_birth_date(node: D3Node): string {
 }
 
 export function get_death_date(node: D3Node): string {
-    return getField(node, ["Todestag", "death_date"], "", false);
+    return getField(node, FIELD_MAPPINGS.deathDate, "", false);
 }
 
 export function get_birth_place(node: D3Node): string {
     // Note: Returns empty string (not "?") if not found, despite "?" for missing input
-    const result = getField(node, ["Geburtsort", "birth_place"], "", true);
+    const result = getField(node, FIELD_MAPPINGS.birthPlace, "", true);
     return result || (!node.added_data.input ? "?" : "");
 }
 
 export function get_death_place(node: D3Node): string {
-    return getField(node, ["Todesort", "death_place"], "", false);
+    return getField(node, FIELD_MAPPINGS.deathPlace, "", false);
 }
 
 export function get_marriage(node: D3Node): string {
-    return getField(node, ["Hochzeit", "marriage"], "", false);
+    return getField(node, FIELD_MAPPINGS.marriage, "", false);
 }
 
 export function get_occupation(node: D3Node): string {
-    return getField(node, ["Beruf", "occupation"], "", false);
+    return getField(node, FIELD_MAPPINGS.occupation, "", false);
 }
 
 export function get_note(node: D3Node): string {
-    return getField(node, ["Notiz", "note"], "", false);
+    return getField(node, FIELD_MAPPINGS.note, "", false);
 }
 
 export function get_year_from_string(date_string: string, default_year: number): number {
@@ -135,7 +136,7 @@ export function get_year_of_birth_date(node: D3Node): number {
 }
 
 export function get_image_path(node: D3Node): string {
-    return getField(node, ["image_path"], "", false);
+    return getField(node, FIELD_MAPPINGS.imagePath, "", false);
 }
 
 function get_data_and_xy(dag_1: DagWithFamilyData, dag_2: DagWithFamilyData) {
