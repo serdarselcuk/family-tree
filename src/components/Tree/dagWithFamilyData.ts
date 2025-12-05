@@ -37,7 +37,7 @@ export function dag_with_family_data(links: Array<[string, string]>, input_per_n
  */
 function getField(
     node: D3Node,
-    keys: string[],
+    keys: readonly string[],
     defaultValue: string = "",
     checkEmpty: boolean = false
 ): string {
@@ -60,7 +60,7 @@ function getField(
  */
 function getFieldFromMember(
     member: Member,
-    keys: string[],
+    keys: readonly string[],
     defaultValue: string = "",
     checkEmpty: boolean = false
 ): string {
