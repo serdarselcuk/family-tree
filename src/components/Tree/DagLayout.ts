@@ -151,7 +151,7 @@ export class DagLayout {
         }
         // Extend dag interface to return the age
         (this.dag as any).get_age = function (node: D3Node) {
-            return (node.added_data as any).age;
+            return node.added_data.age;
         };
     }
 
@@ -295,14 +295,14 @@ export class DagLayout {
     get_average_age(objects: D3Node[]) {
         if (objects.length <= 0) return undefined;
         return objects.reduce((sum, object) => {
-            return sum + (object.added_data as any).age;
+            return sum + (object.added_data.age || 0);
         }, 0) / objects.length;
     }
 
     get_oldest_age(objects: D3Node[]) {
         if (objects.length <= 0) return undefined;
         return objects.reduce((minimum, object) => {
-            return Math.min(minimum, (object.added_data as any).age);
+            return Math.min(minimum, object.added_data.age || Number.POSITIVE_INFINITY);
         }, Number.POSITIVE_INFINITY);
     }
 

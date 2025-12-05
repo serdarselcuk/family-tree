@@ -27,13 +27,22 @@ export interface FamilyData {
     start: string;
 }
 
+/**
+ * Data added to D3 nodes during family tree processing
+ */
 export interface AddedData {
+    /** Previous x coordinate (for animations) */
     x0?: number;
+    /** Previous y coordinate (for animations) */
     y0?: number;
-    is_visible?: boolean;
-    is_highlighted?: boolean;
+    /** Whether this node is currently visible in the tree */
+    is_visible: boolean;
+    /** Whether this node is highlighted (e.g., in search results) */
+    is_highlighted: boolean;
+    /** Calculated age/birth year for layout sorting */
     age?: number;
-    input?: any;
+    /** The member data associated with this node (undefined for union nodes) */
+    input?: Member;
 }
 
 export interface D3Node {

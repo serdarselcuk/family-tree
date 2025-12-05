@@ -12,7 +12,7 @@ export class DagWithFamilyData extends DagWithRelations {
                 is_highlighted: false
             };
             if (node.data in input_per_node_id) {
-                (node.added_data as any).input = input_per_node_id[node.data];
+                node.added_data.input = input_per_node_id[node.data];
             }
         }
     }
@@ -40,8 +40,8 @@ function getField(
     defaultValue: string = "",
     checkEmpty: boolean = false
 ): string {
-    if (!(node.added_data as any).input) return defaultValue;
-    const input = (node.added_data as any).input;
+    if (!node.added_data.input) return defaultValue;
+    const input = node.added_data.input;
 
     for (let key of keys) {
         if (input.hasOwnProperty(key)) {
@@ -87,8 +87,8 @@ export function get_birth_date_of_member(member: Member): string {
 }
 
 export function get_birth_date(node: D3Node): string {
-    if (!(node.added_data as any).input) return "?";
-    return get_birth_date_of_member((node.added_data as any).input);
+    if (!node.added_data.input) return "?";
+    return get_birth_date_of_member(node.added_data.input);
 }
 
 export function get_death_date(node: D3Node): string {
@@ -98,7 +98,7 @@ export function get_death_date(node: D3Node): string {
 export function get_birth_place(node: D3Node): string {
     // Note: Returns empty string (not "?") if not found, despite "?" for missing input
     const result = getField(node, ["Geburtsort", "birth_place"], "", true);
-    return result || (!(node.added_data as any).input ? "?" : "");
+    return result || (!node.added_data.input ? "?" : "");
 }
 
 export function get_death_place(node: D3Node): string {
@@ -163,12 +163,11 @@ function get_data_and_xy(dag_1: DagWithFamilyData, dag_2: DagWithFamilyData) {
 }
 
 export function is_member(node: D3Node): boolean {
-    return (node.added_data as any).input != undefined;
+    return node.added_data.input !== undefined;
 }
 
 export function get_gender(node: D3Node): 'E' | 'K' | undefined {
-    if (!(node.added_data as any).input) return undefined;
-    const input = (node.added_data as any).input;
-    return input.gender;
+    if (!node.added_data.input) return undefined;
+    return node.added_data.input.gender;
 }
 
