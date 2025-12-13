@@ -196,7 +196,8 @@ export class Familienbaum {
 
         // Only expand/collapse on circle click when sidebar is closed and no shift key
         this.click(node.data);
-        this.draw(false, node.data); // Don't recenter on expand/collapse to prevent drift
+        // this.draw(false, node.data); // Don't recenter on expand/collapse to prevent drift
+        // Draw is called inside click logic now
     }
 
     handleEditClick(node: D3Node) {
@@ -248,17 +249,35 @@ export class Familienbaum {
 
     click(current_node_id: string) {
         // First find the clicked node
-        let node_of_dag = this.dag!.find_node(current_node_id);
         let node_of_dag_all = this.dag_all.find_node(current_node_id);
-        if (node_of_dag.added_data.is_highlighted) {
-            // Mark all nodes of relationship as visible in unfiltered DAG
-            let adjacents = this.get_relationship_in_dag_all(node_of_dag_all);
-            for (let adjacent of adjacents)
-                adjacent.added_data.is_visible = true;
-        } else // not highlighted (already expanded)
-        {
+        
+        if (this.is_expandable_downwards(node_of_dag_all)) {
+            // Expand: Show immediate descendants (Unions, Spouses, Children)
+            this.showDescendants(node_of_dag_all);
+        } else {
             // Collapse: Hide descendants recursively
             this.hideDescendants(node_of_dag_all);
+        }
+        
+        this.draw(false, current_node_id); // Don't recenter on expand/collapse to prevent drift
+    }
+
+    showDescendants(node: D3Node) {
+        const unions = node.children ? node.children() : [];
+        for (let u of unions) {
+            u.added_data.is_visible = true;
+            
+            // Show Spouses (parents of the union)
+            const parents = this.dag_all.parents(u);
+            for (let p of parents) {
+                p.added_data.is_visible = true;
+            }
+            
+            // Show Immediate Children
+            const kids = u.children ? u.children() : [];
+            for (let k of kids) {
+                k.added_data.is_visible = true;
+            }
         }
     }
 
@@ -366,7 +385,7 @@ export class Familienbaum {
         // Mark expandable nodes to be highlighted
         for (let node of this.dag.nodes()) {
             let node_of_dag_all = this.dag_all.find_node(node.data);
-            node.added_data.is_highlighted = this.is_expandable_in_dag_all(node_of_dag_all);
+            node.added_data.is_highlighted = this.is_expandable_downwards(node_of_dag_all);
         }
         // Calculate layout
         this.layout = new DagLayout(this.dag, [80, 140]);
@@ -448,9 +467,27 @@ export class Familienbaum {
         return this.dag_all.first_level_adjacency(node); // family node
     }
 
-    is_expandable_in_dag_all(node: D3Node) {
-        let adjacents = Array.from(this.get_relationship_in_dag_all(node));
-        return adjacents.some(adjacent => !adjacent.added_data.is_visible);
+    is_expandable_downwards(node: D3Node) {
+        // Check if any child union, spouse, or child is invisible
+        const unions = node.children ? node.children() : [];
+        if (!unions || unions.length === 0) return false;
+
+        for (let u of unions) {
+            if (!u.added_data.is_visible) return true;
+            
+            // Check spouses (parents of union except self)
+            const parents = this.dag_all.parents(u);
+            for (let p of parents) {
+                if (p.data !== node.data && !p.added_data.is_visible) return true;
+            }
+
+            // Check children
+            const kids = u.children ? u.children() : [];
+            for (let k of kids) {
+                if (!k.added_data.is_visible) return true;
+            }
+        }
+        return false;
     }
 
     add_info_text(svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>) {

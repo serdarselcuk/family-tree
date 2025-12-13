@@ -86,6 +86,7 @@ export function processSheetData(rows: string[][]): FamilyData {
     const genMap: { [key: number]: string } = {};
     const spouseMap: { [key: number]: string | null } = {};
     const spouseNameMap: { [key: number]: { [key: string]: string } } = {};
+    const seenIds = new Set<number>();
 
     // Reset highest ID
     highestId = 0;
@@ -123,19 +124,34 @@ export function processSheetData(rows: string[][]): FamilyData {
         // Read ID from column M, or generate next ID if not present
         let numericId: number;
         const idFromSheet = clean(row[COL_ID]);
+        
         if (idFromSheet && !isNaN(parseInt(idFromSheet, 10))) {
-            numericId = parseInt(idFromSheet, 10);
-            if (numericId > highestId) {
-                highestId = numericId;
+            const parsedId = parseInt(idFromSheet, 10);
+            
+            // Check for collision
+            if (seenIds.has(parsedId)) {
+                // Collision detected! Generate new ID
+                numericId = ++highestId;
+                console.warn(`Row ${index + 2}: ID Collision! ID ${parsedId} already seen. Assigning new ID ${numericId}`);
+                writeAssignedId(index + 2, numericId);
+            } else {
+                // ID is valid and new
+                numericId = parsedId;
+                if (numericId > highestId) {
+                    highestId = numericId;
+                }
             }
         } else {
-            // No ID in sheet, generate one (for backward compatibility or when adding manually)
+            // No ID in sheet, generate one
             numericId = ++highestId;
             console.warn(`Row ${index + 2}: No ID found, assigning ID ${numericId}`);
             
             // Attempt to write the assigned ID back to the sheet
             writeAssignedId(index + 2, numericId);
         }
+
+        // Mark ID as seen to prevent future collisions (if we just generated it, it's definitely new)
+        seenIds.add(numericId);
 
         const id = `mem_${numericId}`;
 

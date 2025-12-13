@@ -63,8 +63,6 @@ export function initEditor(familienbaum: Familienbaum) {
         const titleEl = document.getElementById('sidebar-title');
         const detailsEl = document.getElementById('sidebar-details');
         const imageEl = document.getElementById('sidebar-image') as HTMLImageElement;
-        const btnParents = document.getElementById('btn-parents');
-        const btnChildren = document.getElementById('btn-children');
 
         if (!sidebar || !titleEl || !detailsEl || !imageEl) return;
 
@@ -254,63 +252,6 @@ export function initEditor(familienbaum: Familienbaum) {
         if (btnDeleteChild) {
             btnDeleteChild.onclick = () => {
                 deleteChild(node_of_dag);
-            };
-        }
-
-        const activeFilters = new Set<string>();
-
-        const applyFilters = () => {
-            // 1. Hide everything
-            for (let node of this.dag_all.nodes()) {
-                node.added_data.is_visible = false;
-            }
-
-            // 2. Always show current node
-            node_of_dag_all.added_data.is_visible = true;
-
-            // 3. Apply Parents Filter
-            if (activeFilters.has('parents')) {
-                let parents = Array.from(this.dag_all.parents(node_of_dag_all));
-                while (parents.length > 0) {
-                    let parent = parents.pop()!;
-                    parent.added_data.is_visible = true;
-                    parents = parents.concat(this.dag_all.parents(parent));
-                }
-            }
-
-            // 4. Apply Children Filter
-            if (activeFilters.has('children')) {
-                let children = Array.from(node_of_dag_all.children!());
-
-                // Show spouses (parents of the unions)
-                for (let u of children) {
-                    let parents = this.dag_all.parents(u);
-                    for (let p of parents) {
-                        p.added_data.is_visible = true;
-                    }
-                }
-
-                while (children.length > 0) {
-                    let child = children.pop()!;
-                    child.added_data.is_visible = true;
-                    children = children.concat(Array.from(child.children!()));
-                }
-            }
-
-            this.draw(false);
-        };
-
-        if (btnParents) {
-            btnParents.onclick = () => {
-                activeFilters.add('parents');
-                applyFilters();
-            };
-        }
-
-        if (btnChildren) {
-            btnChildren.onclick = () => {
-                activeFilters.add('children');
-                applyFilters();
             };
         }
 

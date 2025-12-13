@@ -346,7 +346,15 @@ export class DagLayout {
 
     align_to_parents(node: D3Node, parents: D3Node[]) {
         if (parents.length < 1) return;
-        node.x = this.get_average_x(parents)!;
+
+        // Prioritize alignment with the primary parent (non-spouse) to keep the main line straight
+        const primaryParent = parents.find(p => is_member(p) && !p.added_data.input?.is_spouse);
+
+        if (primaryParent) {
+            node.x = primaryParent.x;
+        } else {
+            node.x = this.get_average_x(parents)!;
+        }
     }
 
     get_average_x(objects: D3Node[]) {
