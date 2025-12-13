@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import { z } from 'zod';
 import { FamilyData, Member } from '../../types/types';
+import { UPLOAD_SCRIPT_URL, COLUMN_MAPPING } from '../../ui/editor/config';
 
 // --- Zod Schemas ---
 
@@ -131,6 +132,9 @@ export function processSheetData(rows: string[][]): FamilyData {
             // No ID in sheet, generate one (for backward compatibility or when adding manually)
             numericId = ++highestId;
             console.warn(`Row ${index + 2}: No ID found, assigning ID ${numericId}`);
+            
+            // Attempt to write the assigned ID back to the sheet
+            writeAssignedId(index + 2, numericId);
         }
 
         const id = `mem_${numericId}`;
@@ -232,5 +236,33 @@ export async function loadFromGoogleSheet(url: string): Promise<FamilyData> {
         console.error("Error loading sheet:", error);
         alert("Error loading data. Check console.");
         throw error;
+    }
+}
+
+async function writeAssignedId(rowIndex: number, newId: number) {
+    if (typeof fetch === 'undefined') return;
+
+    try {
+        const payload = {
+            row: rowIndex,
+            updates: {
+                [COLUMN_MAPPING['id']]: newId
+            }
+        };
+
+        // Fire and forget
+        fetch(UPLOAD_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            console.log(`Successfully requested ID write for row ${rowIndex} (ID: ${newId})`);
+        }).catch(err => {
+            console.warn(`Failed to write ID for row ${rowIndex}`, err);
+        });
+
+    } catch (e) {
+        console.warn("Error preparing ID write", e);
     }
 }

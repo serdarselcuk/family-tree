@@ -14,6 +14,8 @@ export class TreeRenderer {
     onNodeDblClick: (node: D3Node) => void;
     onEditClick: (node: D3Node) => void;
 
+    private clickTimer: any = null;
+
     constructor(
         g: d3.Selection<SVGGElement, unknown, HTMLElement, any>,
         onNodeClick: (node: D3Node, event: any) => void,
@@ -57,13 +59,30 @@ export class TreeRenderer {
         // Add a group that will contain the circle and the text
         let circle_group = node_enter_group.append("g")
             .attr("cursor", "pointer")
-            .on("click", function (event, node) {
+            .on("click", (event, node) => {
                 if (event.defaultPrevented) return;
-                that.onNodeClick(node, event);
+                
+                // Debounce click to allow dblclick to cancel it
+                if (that.clickTimer) {
+                    clearTimeout(that.clickTimer);
+                    that.clickTimer = null;
+                }
+                
+                that.clickTimer = setTimeout(() => {
+                    that.clickTimer = null;
+                    that.onNodeClick(node, event);
+                }, 300);
             })
-            .on("dblclick", function (event, node) {
+            .on("dblclick", (event, node) => {
                 if (event.defaultPrevented) return;
                 event.stopPropagation(); // Prevent zoom on double click
+                
+                // Cancel pending click
+                if (that.clickTimer) {
+                    clearTimeout(that.clickTimer);
+                    that.clickTimer = null;
+                }
+                
                 that.onNodeDblClick(node);
             });
 

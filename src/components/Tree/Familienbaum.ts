@@ -209,28 +209,41 @@ export class Familienbaum {
 
     handleNodeDblClick(node: D3Node) {
         let node_of_dag_all = this.dag_all.find_node(node.data);
-        // Collapse Ancestors: Hide parents recursively upward
-        // Parents: Member <- Union <- Parent
-        // dag_all.parents(node) returns Unions
 
-        // Recursively hide all ancestors
-        const hideAncestorsRecursive = (currentNode: D3Node) => {
-            for (let unionNode of this.dag_all.parents(currentNode)) {
-                unionNode.added_data.is_visible = false;
-                for (let parentNode of this.dag_all.parents(unionNode)) {
-                    parentNode.added_data.is_visible = false;
-                    // Recurse upward
-                    hideAncestorsRecursive(parentNode);
-                }
-            }
-        };
+        // 1. Hide everything
+        for (let n of this.dag_all.nodes()) {
+            n.added_data.is_visible = false;
+        }
 
-        hideAncestorsRecursive(node_of_dag_all);
-
-        // Keep the clicked node visible as the new root
+        // 2. Show current node
         node_of_dag_all.added_data.is_visible = true;
 
-        this.draw(false, node.data); // Don't recenter to prevent drift
+        // 3. Show Ancestors
+        let parents = Array.from(this.dag_all.parents(node_of_dag_all));
+        while (parents.length > 0) {
+            let parent = parents.pop()!;
+            parent.added_data.is_visible = true;
+            parents = parents.concat(this.dag_all.parents(parent));
+        }
+
+        // 4. Show Descendants
+        let children = Array.from(node_of_dag_all.children!());
+
+        // Show spouses (parents of the unions) for the clicked node
+        for (let u of children) {
+            let unionParents = this.dag_all.parents(u);
+            for (let p of unionParents) {
+                p.added_data.is_visible = true;
+            }
+        }
+
+        while (children.length > 0) {
+            let child = children.pop()!;
+            child.added_data.is_visible = true;
+            children = children.concat(Array.from(child.children!()));
+        }
+
+        this.draw(true, node.data);
     }
 
     click(current_node_id: string) {
@@ -279,6 +292,29 @@ export class Familienbaum {
     }
 
     draw(recenter = true, current_node_id = this.data.start) {
+        // Ensure current node and its path to parents are visible
+        // This prevents the node from disappearing if intermediate unions were accidentally hidden
+        try {
+            const node_to_focus = this.dag_all.find_node(current_node_id);
+            if (node_to_focus) {
+                // 1. Force current node visible
+                if (!node_to_focus.added_data.is_visible) {
+                    node_to_focus.added_data.is_visible = true;
+                }
+
+                // 2. Force connecting unions visible if they connect to a visible parent
+                const parentUnions = this.dag_all.parents(node_to_focus);
+                for (let u of parentUnions) {
+                    const grandparents = this.dag_all.parents(u);
+                    if (grandparents.some(gp => gp.added_data.is_visible)) {
+                        u.added_data.is_visible = true;
+                    }
+                }
+            }
+        } catch (e) {
+            // Ignore error if node not found (will be handled by fallback later)
+        }
+
         // Filter to include only links between visible nodes
         let links: Array<[string, string]> = [];
         for (let link of this.dag_all.links())
@@ -348,6 +384,28 @@ export class Familienbaum {
             } else {
                 console.warn("Filtered DAG is empty.");
                 return;
+            }
+        }
+
+        // Anchor View: Keep current_node stationary if not recentering
+        if (!recenter) {
+            // SVG X (Horizontal) is mapped to node.y
+            // SVG Y (Vertical) is mapped to node.x
+            // added_data.y0 stores previous node.y
+            // added_data.x0 stores previous node.x
+            const oldSvgX = current_node.added_data.y0;
+            const oldSvgY = current_node.added_data.x0;
+
+            if (oldSvgX !== undefined && oldSvgY !== undefined) {
+                const dSvgX = oldSvgX - current_node.y;
+                const dSvgY = oldSvgY - current_node.x;
+
+                if (dSvgX !== 0 || dSvgY !== 0) {
+                    for (let node of this.dag.nodes()) {
+                        node.y += dSvgX;
+                        node.x += dSvgY;
+                    }
+                }
             }
         }
 

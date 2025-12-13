@@ -186,44 +186,106 @@ export class DagLayout {
     }
 
     align_generation(generation_id: number, nodes: D3Node[]) {
+        // Helper to find the primary node (non-spouse) for a node
+        const get_primary = (n: D3Node) => {
+            if (is_member(n) && n.added_data.input?.is_spouse) {
+                // Try to find the partner who is NOT a spouse
+                const partners = (this.dag as any).get_partners(n);
+                if (partners) {
+                    return partners.find((p: D3Node) => !p.added_data.input?.is_spouse) || partners[0];
+                }
+            }
+            return n;
+        };
+
         // Assign coordinates to all nodes of one generation
         for (let pass of [1, 2, 3]) {
-            nodes.sort((node_1, node_2) => {
-                // First try to use (previously set) coordinates
-                if ((node_1.x != undefined) && (node_2.x != undefined)) {
-                    if (node_1.x > node_2.x) return 1;
-                    if (node_1.x < node_2.x) return -1;
+            // 1. Group nodes by Primary
+            const groups = new Map<D3Node, D3Node[]>();
+            for (let node of nodes) {
+                const primary = get_primary(node);
+                if (!groups.has(primary)) groups.set(primary, []);
+                groups.get(primary)!.push(node);
+            }
+
+            // 2. Sort Primaries
+            const primaries = Array.from(groups.keys());
+            primaries.sort((a, b) => {
+                // Priority 1: Coordinates (Stability) - Maintain relative order if defined
+                if (a.x !== undefined && b.x !== undefined) {
+                    // Use a tolerance to allow reordering if positions are close (e.g., initial layout)
+                    // But if they are far apart, respect layout.
+                    // Actually, for strict sorting requirements ("Always sort siblings..."), 
+                    // we should prioritize Age/Name over current X, UNLESS X reflects a stable user intent?
+                    // But here X is generated. So we prioritize Age/Name.
+                    // Stability check: Only if Age/Name are equal or undefined?
                 }
-                // If equal, fall-back to the age
-                let node_pair = [node_1, node_2];
-                let compare = node_pair.map((this.dag as any).get_age) as number[];
-                if (compare[0] !== compare[1]) {
-                    return compare[0] > compare[1] ? 1 : -1;
+
+                // Priority 2: Age (Birth Year)
+                const ageA = (this.dag as any).get_age(a);
+                const ageB = (this.dag as any).get_age(b);
+                
+                // If both have age, compare
+                if (ageA !== undefined && ageB !== undefined && ageA !== ageB) {
+                    return ageA - ageB;
                 }
-                // Final tie-breaker: ID (stable sort)
-                return node_1.data > node_2.data ? 1 : -1;
+                // If one has age, prioritize it? Or prioritize known over unknown?
+                // "by their birth year if it exists". Assuming ascending.
+                if (ageA !== undefined && ageB === undefined) return -1;
+                if (ageA === undefined && ageB !== undefined) return 1;
+
+                // Priority 3: Name
+                const nameA = a.added_data.input?.name || "";
+                const nameB = b.added_data.input?.name || "";
+                const cmp = nameA.localeCompare(nameB);
+                if (cmp !== 0) return cmp;
+
+                // Priority 4: ID (Tie-breaker)
+                return a.data.localeCompare(b.data);
             });
+
+            // 3. Reconstruct Sorted List & Assign X
             let position = {
                 "x": 0.0,
                 "y": generation_id * this.node_size[1]
             };
-            for (let node of nodes) {
-                node.x = position.x;
-                node.y = position.y;
-                position.x += this.node_size[0];
+
+            for (let p of primaries) {
+                const group = groups.get(p)!;
+                
+                // Ensure Primary is first in group, spouses follow
+                group.sort((x, y) => {
+                    if (x === p) return -1;
+                    if (y === p) return 1;
+                    // Sort spouses by data/ID for consistency
+                    return x.data.localeCompare(y.data);
+                });
+
+                // Assign positions
+                for (let node of group) {
+                    node.x = position.x;
+                    node.y = position.y;
+                    position.x += this.node_size[0];
+                }
             }
+
             if (pass == 1) { // re-alignment toward parents
-                for (let node of nodes) {
-                    let parents = this.dag.parents(node);
-                    this.align_to_parents(node, parents);
+                for (let p of primaries) {
+                    // Align primary to parents
+                    let parents = this.dag.parents(p);
+                    this.align_to_parents(p, parents);
+                    
+                    // Shift spouses to stay attached to primary
+                    const group = groups.get(p)!;
+                    let startX = p.x;
+                    let i = 0;
+                    for (let node of group) {
+                         node.x = startX + (i * this.node_size[0]);
+                         i++;
+                    }
                 }
             }
-            if (pass == 2) { // re-alignment of partners
-                for (let node of nodes) {
-                    if (!is_member(node)) continue;
-                    this.align_partners((this.dag as any).get_partners(node));
-                }
-            }
+            // Pass 2 (align_partners) is implicit in our grouping logic.
         }
     }
 
@@ -275,8 +337,10 @@ export class DagLayout {
         });
         let node_1 = partners[0];
         let node_partners = partners.filter(node => node != node_1);
+        let i = 1;
         for (let node_2 of node_partners) {
-            node_2.x = node_1.x + 1;
+            node_2.x = node_1.x + (this.node_size[0] * i);
+            i++;
         }
     }
 
