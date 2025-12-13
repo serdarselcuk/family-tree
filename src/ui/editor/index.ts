@@ -48,6 +48,7 @@ export function initEditor(familienbaum: Familienbaum) {
 
     familienbaum.create_editing_form = function (node_of_dag: D3Node, node_of_dag_all: D3Node) {
         setCurrentEditedNode(node_of_dag);
+        const nameToIdMap = new Map<string, string>();
 
         // 1. Update Tree View (Expand/Highlight)
         for (let node of this.get_relationship_in_dag_all(node_of_dag_all))
@@ -168,6 +169,51 @@ export function initEditor(familienbaum: Familienbaum) {
                 detailsHtml += `</div>`;
             });
 
+            // Path Finder UI
+            detailsHtml += `
+            <div class="sidebar-section" style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
+                <h4 style="margin-bottom: 10px; font-size: 0.9rem;">En Kısa Yol Bul</h4>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <input type="text" id="path-target-input" class="sidebar-input" list="member-list" placeholder="Hedef kişi ismi..." style="width:100%;">
+                    <datalist id="member-list">
+                        ${this.dag_all.nodes()
+                            .filter(n => is_member(n))
+                            .map(n => {
+                                const name = get_name(n);
+                                const bdate = (n.added_data.input as any).birth_date;
+                                let extra = "";
+                                if (bdate) extra += ` (d. ${bdate})`;
+                                
+                                try {
+                                    const unions = this.dag_all.parents(n);
+                                    if (unions.length > 0) {
+                                        const parents = this.dag_all.parents(unions[0]);
+                                        const father = parents.find(p => (p.added_data.input as any)?.gender === 'E');
+                                        const parentName = father ? get_name(father) : (parents.length > 0 ? get_name(parents[0]) : "");
+                                        if (parentName) extra += ` - Baba: ${parentName}`;
+                                    }
+                                } catch(e) {}
+
+                                let displayValue = `${name}${extra}`;
+                                
+                                // Handle duplicates by appending counter
+                                if (nameToIdMap.has(displayValue)) {
+                                    let counter = 2;
+                                    while (nameToIdMap.has(`${displayValue} (${counter})`)) {
+                                        counter++;
+                                    }
+                                    displayValue = `${displayValue} (${counter})`;
+                                }
+                                
+                                nameToIdMap.set(displayValue, n.data);
+                                return `<option value="${displayValue}">`;
+                            })
+                            .join('')}
+                    </datalist>
+                    <button id="btn-find-path" class="action-btn btn-primary" style="width: 100%; padding: 12px;">Bul</button>
+                </div>
+            </div>`;
+
             const isLeafNode = Array.from(node_of_dag_all.children!()).length === 0;
 
             let actionButton = "";
@@ -205,6 +251,7 @@ export function initEditor(familienbaum: Familienbaum) {
         const btnAddChild = document.getElementById('btn-add-child');
         const btnAddSpouse = document.getElementById('btn-add-spouse');
         const btnDeleteChild = document.getElementById('btn-delete-child');
+        const btnFindPath = document.getElementById('btn-find-path');
 
         if (btnSave) {
             btnSave.onclick = () => {
@@ -282,6 +329,22 @@ export function initEditor(familienbaum: Familienbaum) {
                 btnSheet.onclick = () => window.open("https://docs.google.com/spreadsheets/d/12kZlANYbq0w3k8TpDxssVSlWVfbs-qZQ9bAjERci0SM/edit?gid=790197592", "_blank");
                 btnSheet.innerText = "Google Tablosunu Aç";
             }
+        }
+
+        if (btnFindPath) {
+            btnFindPath.onclick = () => {
+                const input = document.getElementById('path-target-input') as HTMLInputElement;
+                const inputValue = input.value;
+                if (!inputValue) return;
+
+                const targetId = nameToIdMap.get(inputValue);
+                
+                if (targetId) {
+                    familienbaum.findPath(node_of_dag_all.data, targetId);
+                } else {
+                    alert("Kişi bulunamadı: " + inputValue);
+                }
+            };
         }
 
         sidebar.classList.add('active');

@@ -211,36 +211,26 @@ export class DagLayout {
             // 2. Sort Primaries
             const primaries = Array.from(groups.keys());
             primaries.sort((a, b) => {
-                // Priority 1: Coordinates (Stability) - Maintain relative order if defined
-                if (a.x !== undefined && b.x !== undefined) {
-                    // Use a tolerance to allow reordering if positions are close (e.g., initial layout)
-                    // But if they are far apart, respect layout.
-                    // Actually, for strict sorting requirements ("Always sort siblings..."), 
-                    // we should prioritize Age/Name over current X, UNLESS X reflects a stable user intent?
-                    // But here X is generated. So we prioritize Age/Name.
-                    // Stability check: Only if Age/Name are equal or undefined?
-                }
-
-                // Priority 2: Age (Birth Year)
+                // Priority 1: Age (Birth Year)
                 const ageA = (this.dag as any).get_age(a);
                 const ageB = (this.dag as any).get_age(b);
                 
-                // If both have age, compare
-                if (ageA !== undefined && ageB !== undefined && ageA !== ageB) {
-                    return ageA - ageB;
+                // If both have age, compare numerically (Ascending)
+                if (ageA !== undefined && ageB !== undefined) {
+                    if (ageA !== ageB) return ageA - ageB;
                 }
-                // If one has age, prioritize it? Or prioritize known over unknown?
-                // "by their birth year if it exists". Assuming ascending.
+                
+                // If one has age, prioritize it (Known age comes FIRST)
                 if (ageA !== undefined && ageB === undefined) return -1;
                 if (ageA === undefined && ageB !== undefined) return 1;
 
-                // Priority 3: Name
+                // Priority 2: Name (Fallback)
                 const nameA = a.added_data.input?.name || "";
                 const nameB = b.added_data.input?.name || "";
                 const cmp = nameA.localeCompare(nameB);
                 if (cmp !== 0) return cmp;
 
-                // Priority 4: ID (Tie-breaker)
+                // Priority 3: ID (Tie-breaker)
                 return a.data.localeCompare(b.data);
             });
 
@@ -287,6 +277,10 @@ export class DagLayout {
             }
             // Pass 2 (align_partners) is implicit in our grouping logic.
         }
+
+        // Final Sort: Ensure the nodes array matches the visual order (X coordinate)
+        // This is crucial because DagRelaxation uses array order to enforce placement.
+        nodes.sort((a, b) => a.x - b.x);
     }
 
     add_to_map(object: Map<any, any>, key: any, value: any) {

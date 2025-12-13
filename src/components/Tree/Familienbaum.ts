@@ -502,4 +502,71 @@ export class Familienbaum {
             .attr("y", "24pt")
             .text("ⓘ");
     }
+
+    findPath(startId: string, targetId: string) {
+        if (!startId || !targetId) return;
+        if (startId === targetId) {
+            alert("Same person selected.");
+            return;
+        }
+
+        const startNode = this.dag_all.find_node(startId);
+        const targetNode = this.dag_all.find_node(targetId);
+
+        if (!startNode || !targetNode) {
+            alert("Node not found.");
+            return;
+        }
+
+        const queue: { node: D3Node, path: D3Node[] }[] = [];
+        const visited = new Set<string>();
+
+        queue.push({ node: startNode, path: [startNode] });
+        visited.add(startNode.data);
+
+        while (queue.length > 0) {
+            const { node, path } = queue.shift()!;
+
+            if (node.data === targetId) {
+                this.highlightPath(path);
+                return;
+            }
+
+            // Get neighbors (undirected traversal)
+            // dag_all.first_level_adjacency gives neighbors (Unions for Members, Members for Unions)
+            const neighbors = this.dag_all.first_level_adjacency(node);
+
+            for (let neighbor of neighbors) {
+                if (!visited.has(neighbor.data)) {
+                    visited.add(neighbor.data);
+                    queue.push({ node: neighbor, path: [...path, neighbor] });
+                }
+            }
+        }
+
+        alert("No connection found between these people.");
+    }
+
+    highlightPath(path: D3Node[]) {
+        // 1. Hide everything
+        for (let n of this.dag_all.nodes()) {
+            n.added_data.is_visible = false;
+        }
+
+        // 2. Show path nodes
+        for (let n of path) {
+            n.added_data.is_visible = true;
+            
+            // If node is a Union (not a member), show its parents (Common Ancestors)
+            if (!is_member(n)) {
+                const parents = this.dag_all.parents(n);
+                for (let p of parents) {
+                    p.added_data.is_visible = true;
+                }
+            }
+        }
+
+        // 3. Draw
+        this.draw(false);
+    }
 }

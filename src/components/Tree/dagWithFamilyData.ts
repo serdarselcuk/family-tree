@@ -1,6 +1,5 @@
 import { DagWithRelations } from './dagWithRelations';
 import { D3Node, Member } from '../../types/types';
-import { LAYOUT_CONSTANTS } from '../../constants/layout';
 import { FIELD_MAPPINGS } from '../../constants/fieldMappings';
 
 export class DagWithFamilyData extends DagWithRelations {
@@ -130,9 +129,19 @@ export function get_year_from_string(date_string: string, default_year: number):
     }
 }
 
-export function get_year_of_birth_date(node: D3Node): number {
+export function get_year_of_birth_date(node: D3Node): number | undefined {
     const date_string = get_birth_date(node);
-    return get_year_from_string(date_string, LAYOUT_CONSTANTS.DEFAULT_BIRTH_YEAR);
+    if (date_string === "?" || date_string === "") return undefined;
+
+    let numbers = String(date_string).match(/\d+/gi);
+    if (!numbers) return undefined;
+
+    const validNumbers = numbers.filter(x => Number(x) > 31);
+    if (validNumbers.length <= 0) {
+        return undefined;
+    } else {
+        return Number(validNumbers[0]);
+    }
 }
 
 export function get_image_path(node: D3Node): string {
