@@ -198,6 +198,30 @@ export class DagLayout {
             return n;
         };
 
+        // Helper to get primary parent's X coordinate
+        const get_primary_parent_x = (n: D3Node): number | undefined => {
+            const parents = this.dag.parents(n);
+            if (parents.length === 0) return undefined;
+            // Parents of a member are Unions. Parents of Union are Members.
+            // If n is Member, parents are Unions.
+            // We want the X of the Union? Or X of Grandparent?
+            // Usually, Member -> Union (parent) -> Member (grandparent).
+            // But 'this.dag.parents(n)' returns the immediate parents in the DAG.
+            // In our DAG: Member -> Union -> Child.
+            // So Parent of Child is Union.
+            // Union X is usually aligned to *its* parent (Grandparent).
+            // So using Union X is correct for grouping.
+            
+            // However, if n is Union?
+            // align_generation handles nodes. Nodes can be Members or Unions.
+            // If n is Member, parent is Union.
+            // If n is Union, parent is Member.
+            
+            // We want to group based on immediate parent position.
+            const parent = parents[0]; // Usually enough for grouping
+            return parent ? parent.x : undefined;
+        };
+
         // Assign coordinates to all nodes of one generation
         for (let pass of [1, 2, 3]) {
             // 1. Group nodes by Primary
@@ -211,7 +235,20 @@ export class DagLayout {
             // 2. Sort Primaries
             const primaries = Array.from(groups.keys());
             primaries.sort((a, b) => {
-                // Priority 1: Age (Birth Year)
+                // Priority 0: Parent Grouping (Prevent crossings)
+                // Only apply if x is defined (Pass 2+) or if parents have x (Pass 1)
+                const parentX_A = get_primary_parent_x(a);
+                const parentX_B = get_primary_parent_x(b);
+                
+                if (parentX_A !== undefined && parentX_B !== undefined) {
+                    // Group by parent position
+                    if (parentX_A !== parentX_B) return parentX_A - parentX_B;
+                }
+                // If one has parent and other doesn't (unlikely in same gen), keep them apart
+                if (parentX_A !== undefined && parentX_B === undefined) return 1;
+                if (parentX_A === undefined && parentX_B !== undefined) return -1;
+
+                // Priority 1: Age (Birth Year) - Siblings
                 const ageA = (this.dag as any).get_age(a);
                 const ageB = (this.dag as any).get_age(b);
                 
