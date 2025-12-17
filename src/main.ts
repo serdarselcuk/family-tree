@@ -1,4 +1,3 @@
-import '../css/familienbaum.css';
 import * as d3 from 'd3';
 import { loadFromGoogleSheet } from './services/data/sheetLoader';
 import { Familienbaum } from './components/Tree/Familienbaum';
@@ -182,9 +181,10 @@ function triggerCirkinMode(familienbaum: Familienbaum) {
 
 function setupGlobalSearch(familienbaum: Familienbaum) {
     const input = document.getElementById('global-search-input') as HTMLInputElement;
-    const dropdown = document.getElementById('search-dropdown');
+    const dropdownEl = document.getElementById('search-dropdown');
 
-    if (!input || !dropdown) return;
+    if (!input || !dropdownEl) return;
+    const dropdown = dropdownEl as HTMLElement;
 
     // Build search entries: { display, normalized, id }
     const searchEntries: { display: string; normalized: string; id: string }[] = [];
