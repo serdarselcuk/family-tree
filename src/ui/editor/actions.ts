@@ -337,14 +337,13 @@ export async function submitNewSpouse(node: D3Node) {
         break;
     }
 
-    const targetRow = insertAfterRow + 1;
+    const targetRow = insertAfterRow;
 
     // 3. Add System Fields to Updates
     updates[COLUMN_MAPPING['gen_col']] = "E";
     updates[COLUMN_MAPPING['father']] = "";
     updates[COLUMN_MAPPING['mother']] = "";
-    updates[COLUMN_MAPPING['note']] = (updates[COLUMN_MAPPING['note']] ? updates[COLUMN_MAPPING['note']] + ", " : "") + "is_spouse:true";
-    updates[COLUMN_MAPPING['id']] = getNextId(); // Add next ID
+    updates[COLUMN_MAPPING['id']] = getNextId();
 
     // 4. Send Request
     statusEl.innerText = "Ekleniyor...";
