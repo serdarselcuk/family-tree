@@ -96,9 +96,9 @@
 
 <body>
     <!-- Global Search -->
-    <div style="position: fixed; top: 24px; left: 24px; z-index: 1000;">
-        <input type="text" id="global-search-input" list="global-member-list" class="glass-input" placeholder="Kişi ara...">
-        <datalist id="global-member-list"></datalist>
+    <div id="search-container" style="position: fixed; top: 24px; left: 24px; z-index: 1000;">
+        <input type="text" id="global-search-input" class="glass-input" placeholder="Kişi ara..." autocomplete="off">
+        <div id="search-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 300px; overflow-y: auto; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 4px;"></div>
     </div>
 
     <!-- Global Patrilineal Toggle Button -->

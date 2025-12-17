@@ -182,22 +182,21 @@ function triggerCirkinMode(familienbaum: Familienbaum) {
 
 function setupGlobalSearch(familienbaum: Familienbaum) {
     const input = document.getElementById('global-search-input') as HTMLInputElement;
-    const datalist = document.getElementById('global-member-list');
-    
-    if (!input || !datalist) return;
+    const dropdown = document.getElementById('search-dropdown');
 
-    // Clear existing options
-    datalist.innerHTML = '';
-    
-    const nameToIdMap = new Map<string, string>();
+    if (!input || !dropdown) return;
+
+    // Build search entries: { display, normalized, id }
+    const searchEntries: { display: string; normalized: string; id: string }[] = [];
     const nodes = familienbaum.dag_all.nodes().filter(n => is_member(n));
+    const seenDisplays = new Set<string>();
 
     nodes.forEach(n => {
         const name = get_name(n);
         const bdate = (n.added_data.input as any).birth_date;
         let extra = "";
         if (bdate) extra += ` (d. ${bdate})`;
-        
+
         try {
             const unions = familienbaum.dag_all.parents(n);
             if (unions.length > 0) {
@@ -209,51 +208,126 @@ function setupGlobalSearch(familienbaum: Familienbaum) {
         } catch(e) {}
 
         let displayValue = `${name}${extra}`;
-        
+
         // Handle duplicates
-        if (nameToIdMap.has(displayValue)) {
+        if (seenDisplays.has(displayValue)) {
             let counter = 2;
-            while (nameToIdMap.has(`${displayValue} (${counter})`)) {
+            while (seenDisplays.has(`${displayValue} (${counter})`)) {
                 counter++;
             }
             displayValue = `${displayValue} (${counter})`;
         }
-        
-        nameToIdMap.set(displayValue, n.data);
-        
-        const option = document.createElement('option');
-        option.value = displayValue;
-        datalist.appendChild(option);
+        seenDisplays.add(displayValue);
+
+        searchEntries.push({
+            display: displayValue,
+            normalized: normalizeString(displayValue),
+            id: n.data
+        });
     });
 
-    // Handle selection
-    input.onchange = () => {
-        const val = input.value;
+    let selectedIndex = -1;
+
+    function showDropdown(matches: typeof searchEntries) {
+        dropdown.innerHTML = '';
+        if (matches.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        matches.slice(0, 20).forEach((entry, idx) => {
+            const div = document.createElement('div');
+            div.textContent = entry.display;
+            div.style.cssText = 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;';
+            div.onmouseenter = () => {
+                selectedIndex = idx;
+                highlightSelected();
+            };
+            div.onclick = () => selectEntry(entry);
+            dropdown.appendChild(div);
+        });
+
+        dropdown.style.display = 'block';
+        selectedIndex = -1;
+    }
+
+    function highlightSelected() {
+        const items = dropdown.children;
+        for (let i = 0; i < items.length; i++) {
+            (items[i] as HTMLElement).style.background = i === selectedIndex ? '#e0e0e0' : 'transparent';
+        }
+    }
+
+    function selectEntry(entry: typeof searchEntries[0]) {
+        // Clear ugly mode
+        for (let node of familienbaum.dag_all.nodes()) {
+            if (node.added_data.is_ugly) node.added_data.is_ugly = false;
+        }
+
+        familienbaum.connectToVisible(entry.id);
+        input.value = '';
+        dropdown.style.display = 'none';
+        input.blur();
+    }
+
+    input.oninput = () => {
+        const val = input.value.trim();
         const normalizedVal = normalizeString(val);
-        
+
         if (normalizedVal === 'cirkin') {
             triggerCirkinMode(familienbaum);
             input.value = '';
+            dropdown.style.display = 'none';
             input.blur();
             return;
         }
 
-        // Clear ugly mode on normal navigation
-        for (let node of familienbaum.dag_all.nodes()) {
-             if (node.added_data.is_ugly) {
-                 node.added_data.is_ugly = false;
-             }
+        if (val.length < 2) {
+            dropdown.style.display = 'none';
+            return;
         }
 
-        const id = nameToIdMap.get(val);
-        if (id) {
-            familienbaum.connectToVisible(id);
-            input.value = ''; // Reset input
-            input.blur();
+        // Filter by normalized partial match
+        const matches = searchEntries.filter(e => e.normalized.includes(normalizedVal));
+        showDropdown(matches);
+    };
+
+    input.onkeydown = (e) => {
+        const items = dropdown.children;
+        if (dropdown.style.display === 'none' || items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            highlightSelected();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, 0);
+            highlightSelected();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0) {
+                const normalizedVal = normalizeString(input.value.trim());
+                const matches = searchEntries.filter(e => e.normalized.includes(normalizedVal));
+                if (matches[selectedIndex]) {
+                    selectEntry(matches[selectedIndex]);
+                }
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
         }
     };
-    
-    // Also handle input event for immediate feedback if desired, but 'change' is standard for datalist selection
+
+    input.onblur = () => {
+        // Delay to allow click on dropdown
+        setTimeout(() => { dropdown.style.display = 'none'; }, 150);
+    };
+
+    input.onfocus = () => {
+        if (input.value.trim().length >= 2) {
+            input.oninput?.(new Event('input'));
+        }
+    };
 }
 
 // Main initialization
