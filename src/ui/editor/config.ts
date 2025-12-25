@@ -1,4 +1,4 @@
-export const UPLOAD_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz98JrPFb1xW84pirJKMHlsvDJ5c2msxsVDTYvwKpm498twobAOhVuEfNrvWtzUI3LV/exec";
+export const UPLOAD_SCRIPT_URL = "https://docs.google.com/spreadsheets/d/1FFzX_ywTR39bLTCDtFCLyjFYl9IZYdL3PkoLZjKUyOs/edit?usp=drivesdk";
 
 // --- HARDCODED COLUMN MAPPING (1-based indices for Google Sheet) ---
 export const COLUMN_MAPPING: { [key: string]: number } = {
